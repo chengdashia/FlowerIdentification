@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flowers Classifier</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #app {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .upload-container {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 40px;
+            margin: 20px auto;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-container:hover {
+            background-color: #f1f1f1;
+        }
+        .upload-container input[type="file"] {
+            display: none;
+        }
+        .upload-container label {
+            display: block;
+            font-size: 16px;
+            color: #007bff;
+            cursor: pointer;
+        }
+        .upload-container p {
+            margin: 10px 0;
+            color: #6c757d;
+        }
+        button {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-top: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #6c757d;
+        }
+        #image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .header-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <img src="https://www.2008php.com/2017_Website_appreciate/2017-04-29/20170429171941.jpg" alt="Header Image" class="header-image" width="800" height="300">
+        <h1>花卉识别系统</h1>
+        <div class="upload-container" @click="triggerFileInput">
+            <input type="file" @change="onFileChange" ref="fileInput" style="display: none;">
+            <label for="file">请上传图片文件</label>
+            <p>拖拽文件到这里或 <span style="color: #007bff; text-decoration: underline;">点击上传</span></p>
+            <p>jpg/png 文件大小小于 2M</p>
+        </div>
+        <button @click="anaylize" :disabled="!selectedFile">识别</button>
+        <div v-if="previewUrl">
+            <img :src="previewUrl" id="image-preview" alt="Image Preview">
+        </div>
+        <h3><span id="status">{{statusMessage}}</span></h3>
+        <div id="result">
+            <div v-html="resultHtml"></div>
+        </div>
+        <div id="barchart"></div>
+        <button class="history-button" @click="goToHistory">查看识别历史记录</button>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                selectedFile: null,
+                previewUrl: null,
+                resultHtml: '',
+                statusMessage: '',
+                IMAGENET_CLASSES: {
+                    0: "00",
+                    1: "01",
+                    2: "02",
+                    3: "03",
+                    4: "04",
+                    5: "05",
+                    6: "06",
+                    7: "07",
+                    8: "08",
+                    9: "09",
+                    10: "10",
+                }
+            },
+            methods: {
+                triggerFileInput() {
+                    this.$refs.fileInput.click();
+                },
+                onFileChange(event) {
+                    const file = event.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        this.selectedFile = file;
+                        this.previewUrl = URL.createObjectURL(file);
+                    } else {
+                        this.selectedFile = null;
+                        this.previewUrl = null;
+                        this.resultHtml = '请上传有效的图片文件（jpg 或 png 格式）。';
+                    }
+                },
+                async anaylize() {
+                    if (!this.selectedFile) return;
+                    this.statusMessage = "开始识别，请稍候...";
+    
+                    const formData = new FormData();
+                    formData.append('file', this.selectedFile);
+    
+                    // 清空旧的结果
+                    this.resultHtml = '';
+    
+                    try {
+                        const response = await fetch('/flower_classify/', {
+                            method: 'POST',
+                            body: formData
+                        });
+    
+                        const result = await response.json();
+                        if (result.code === 0) {
+                            this.statusMessage = "识别完成!";
+                            this.resultHtml = this.generateResultHtml(result.data.predictions, result.data.msg);
+    
+                            // 绘制图形
+                            const data = result.data.predictions.map(pred => {
+                                return { index: pred.trait_name, value: pred.max_prob };
+                            });
+
+                            const surface = { name: '各种花卉的可能性', tab: '分析结果' };
+                            tfvis.render.barchart(surface, data, {
+                                xLabel: "花的品种",
+                                yLabel: "可能性",
+                                width: 400,
+                                height: 300
+                            });
+                        } else {
+                            this.statusMessage = "识别失败!";
+                        }
+                    } catch (error) {
+                        console.error("识别请求失败:", error);
+                        this.statusMessage = "识别失败!";
+                    }
+                },
+                generateResultHtml(predictions, msg) {
+                    let html = '<h4>预测结果：</h4>';
+                    predictions.forEach(pred => {
+                        html += `<p>${pred.trait_name} - 类别: ${pred.max_class}, 可能性: ${(pred.max_prob * 100).toFixed(2)}%</p>`;
+                    });
+                    html += `<h4>最终类预测:</h4><p>${msg}</p>`;
+                    return html;
+                },
+                goToHistory() {
+                    window.location.href = '/user_history';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
