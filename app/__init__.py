@@ -59,9 +59,11 @@ def create_app():
     # Import and register blueprints
     from .routes.auth import auth_ns
     from .routes.identify import identify_ns
+    from .routes.flower_identify import flower_identify_ns
 
     api.add_namespace(auth_ns, path='/auth')
     api.add_namespace(identify_ns, path='/identify')
+    api.add_namespace(identify_ns, path='/flower_identify')
 
     # 错误处理程序
     @app.errorhandler(404)

@@ -9,30 +9,28 @@ auth_ns = Namespace('auth', description='Authentication related operations')
 # Define the models for Swagger documentation
 register_model = auth_ns.model('Register', {
     'username': fields.String(required=True, description='用户名'),
-    'account': fields.String(required=True, description='用户账号'),
     'password': fields.String(required=True, description='用户密码')
 })
 
 login_model = auth_ns.model('Login', {
-    'account': fields.String(required=True, description='用户账号'),
+    'username': fields.String(required=True, description='用户名'),
     'password': fields.String(required=True, description='用户密码')
 })
 
 
-@auth_ns.route('/register')
+@auth_ns.route('/register', methods=['POST'])
 class Register(Resource):
     @auth_ns.doc(description='用户注册')
     @auth_ns.expect(register_model)
     def post(self):
         data = request.get_json()
         username = data.get('username')
-        account = data.get('account')
         password = data.get('password')
 
-        if User.query.filter_by(account=account).first() is not None:
-            return make_response(jsonify({"message": "Account already exists"}), 400)
+        if User.query.filter_by(username=username).first() is not None:
+            return make_response(jsonify({"message": "User already exists"}), 400)
 
-        new_user = User(username=username, account=account)
+        new_user = User(username=username)
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
@@ -40,26 +38,26 @@ class Register(Resource):
         return make_response(jsonify({"message": "User registered successfully"}), 201)
 
 
-@auth_ns.route('/login')
+@auth_ns.route('/login', methods=['POST'])
 class Login(Resource):
     @auth_ns.doc(description='登录')
     @auth_ns.expect(login_model)
     def post(self):
         data = request.get_json()
-        account = data.get('account')
+        username = data.get('username')
         password = data.get('password')
 
-        user = User.query.filter_by(account=account).first()
+        user = User.query.filter_by(username=username).first()
 
         if user is None or not user.check_password(password):
             return make_response(jsonify({"message": "Invalid account or password"}), 401)
 
         return make_response(jsonify({
+            "code": 200,
             "message": "Login successful",
             "user": {
                 "id": user.id,
-                "username": user.username,
-                "account": user.account
+                "username": user.username
             }
         }), 200)
 
