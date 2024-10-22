@@ -99,7 +99,7 @@ class UploadImage(Resource):
             transform = current_app.config['TRANSFORM']
 
             # Transform the image to a tensor and add batch dimension
-            image_tensor = transform(image).unsqueeze(0).to('cuda')
+            image_tensor = transform(image).unsqueeze(0).to('cpu')
 
             with torch.no_grad():
                 outputs = model(image_tensor)

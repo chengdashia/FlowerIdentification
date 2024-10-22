@@ -15,7 +15,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 ALLOWED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/gif'}
 
 # 定义设备
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device('cpu')
 
 # 加载模型
 net1, net2, yolo_model = load_models(device)

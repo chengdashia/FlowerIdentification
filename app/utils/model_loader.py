@@ -3,7 +3,7 @@ from ultralytics import YOLO
 import app.models.model_bicnn as model_bicnn
 import app.models.model_bicnn2 as model_bicnn2
 
-def load_models(device):
+def load_models(device=torch.device('cpu')):
     # 加载 BICNN 模型1
     model_path1 = 'static/bcnn_alllayer1.pth'
     net1 = model_bicnn.Net().to(device)
