@@ -60,10 +60,12 @@ def create_app():
     from .routes.auth import auth_ns
     from .routes.identify import identify_ns
     from .routes.flower_identify import flower_identify_ns
+    from .routes.chr_identify import chr_identify_ns
 
     api.add_namespace(auth_ns, path='/auth')
     api.add_namespace(identify_ns, path='/identify')
-    api.add_namespace(identify_ns, path='/flower_identify')
+    api.add_namespace(flower_identify_ns, path='/flower_identify')
+    api.add_namespace(chr_identify_ns, path='/chr_identify')
 
     # 错误处理程序
     @app.errorhandler(404)

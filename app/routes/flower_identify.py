@@ -97,6 +97,8 @@ class UploadImage(Resource):
 
         # 处理上传的图像并进行分类
         results, error = process_image(file)
+        print(results)
+        print(error)
 
         if error:
             return make_response(jsonify({"message": "Failed to process image", "error": error}), 500)

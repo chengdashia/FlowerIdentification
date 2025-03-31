@@ -51,7 +51,12 @@ class Net(nn.Module):
         # print(x.shape)  # 打印出张量的形状以调试
         batch_size = x.size(0)
         x = x.view(batch_size, 512, 14 * 14)
+
+
+
         x = (torch.bmm(x, torch.transpose(x, 1, 2)) / 28 ** 2).view(batch_size, -1)
+
         x = torch.nn.functional.normalize(torch.sign(x) * torch.sqrt(torch.abs(x) + 1e-10))
+
         x = self.classifiers(x)
         return x

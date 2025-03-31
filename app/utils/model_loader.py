@@ -2,6 +2,8 @@ import torch
 from ultralytics import YOLO
 import app.models.model_bicnn as model_bicnn
 import app.models.model_bicnn2 as model_bicnn2
+from app.models.resnet import *
+from app.models.resnet1 import *
 
 def load_models(device=torch.device('cpu')):
     # 加载 BICNN 模型1
@@ -21,3 +23,19 @@ def load_models(device=torch.device('cpu')):
     yolo_model = YOLO(yolo_model_path)
 
     return net1, net2, yolo_model
+
+
+def load_juhua_model(device=torch.device('cpu')):
+    # 加载YOLO模型
+    yolo_model_path = r'static/yolo_best.pt'
+    model_path1 = r'static/ju_res101_huaxu.pth'
+    net1 = resnet().to(device)
+    net1.load_state_dict(torch.load(model_path1, map_location=device))
+    net1.eval()
+
+    # 加载性状2模型
+    model_path2 = r'static/ju_res101_huaxin.pth'
+    net2 = resnet1().to(device)
+    net2.load_state_dict(torch.load(model_path2, map_location=device))
+    net2.eval()
+    return YOLO(yolo_model_path), net1, net2
