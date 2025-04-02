@@ -3,10 +3,13 @@ import os
 import base64
 import torch
 import tempfile
+from app import db
+from datetime import datetime
 from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Resource, Namespace
 from torchvision import transforms
 from app import api
+from app.models.history import IdentifyHistory
 from PIL import Image
 from app.utils.model_loader import load_juhua_model
 from app.utils.image_processing import detect_and_crop
@@ -213,18 +216,31 @@ class ImageCrop(Resource):
         responses={200: '图像处理成功', 400: '无效输入', 500: '服务器内部错误'}
     )
     def post(self):
+        """API端点，接收图像文件并返回裁剪结果"""
         if 'file' not in request.files:
-            return jsonify({"message": "没有文件部分"}), 400
+            return make_response(jsonify({
+                "code": 400,
+                "message": "没有文件部分"
+            }), 400)
 
         file = request.files['file']
         if file.filename == '':
-            return jsonify({"message": "未选择文件"}), 400
+            return make_response(jsonify({
+                "code": 400,
+                "message": "未选择文件"
+            }), 400)
 
         if not allowed_file(file.filename):
-            return jsonify({"message": "不允许的文件类型"}), 400
+            return make_response(jsonify({
+                "code": 400,
+                "message": "不允许的文件类型"
+            }), 400)
 
         if not allowed_mime_type(file.content_type):
-            return jsonify({"message": "不允许的MIME类型"}), 400
+            return make_response(jsonify({
+                "code": 400,
+                "message": "不允许的MIME类型"
+            }), 400)
 
         # 处理上传的图像
         results, error = process_image(file)
@@ -254,43 +270,70 @@ class ImagePredict(Resource):
         if request.method == 'POST':
             temp_path = None
             try:
-                # 获取JSON数据
                 data = request.get_json()
+                headers = request.headers
 
+                # 校验必要字段
                 if not data or 'image' not in data:
-                    return jsonify({'error': '未提供图像数据'}), 400
+                    return make_response(jsonify({
+                        "code": 400,
+                        "message": "缺少图像数据或用户ID"
+                    }), 400)
 
-                # 获取base64图像数据
                 base64_image = data['image']
-
-                # 获取图像类别信息(如果提供)
+                user_id = headers.get('token')
                 image_class = data.get('image_class', '')
 
-                # 创建临时文件
+                # 创建临时文件保存图像
                 temp_file_suffix = f"_{image_class}.jpg" if image_class else ".jpg"
                 with tempfile.NamedTemporaryFile(suffix=temp_file_suffix, delete=False) as temp_file:
                     temp_path = temp_file.name
 
-                # 解码并保存图像
+                # 解码并保存图像到临时路径
                 if not decode_base64_to_image(base64_image, temp_path):
-                    return jsonify({'error': '无法解码图像'}), 400
+                    return make_response(jsonify({
+                        "code": 400,
+                        "message": "无法解码图像"
+                    }), 400)
 
-                # 运行预测
+                # 调用模型进行预测
                 result = predict_image(temp_path)
 
-                if result:
+                # 确保返回包含所有字段
+                required_keys = {'prediction1', 'prediction2', 'probability1', 'probability2'}
+                if result and required_keys.issubset(result.keys()):
+                    # 入库操作
+                    history = IdentifyHistory(
+                        img=base64_image,
+                        user_id=user_id,
+                        prediction1=result['prediction1'],
+                        probability1=result['probability1'],
+                        prediction2=result['prediction2'],
+                        probability2=result['probability2'],
+                        created_time=datetime.now()
+                    )
+                    db.session.add(history)
+                    db.session.commit()
+
                     return make_response(jsonify({
                         "code": 200,
                         "message": "识别成功",
                         "result": result
                     }), 200)
                 else:
-                    return jsonify({'error': '预测失败'}), 500
+                    return make_response(jsonify({
+                        "code": 500,
+                        "message": "预测结果格式错误"
+                    }), 500)
 
             except Exception as e:
-                return jsonify({'error': f'处理请求时出错: {str(e)}'}), 500
+                db.session.rollback()  # 出错时回滚事务
+                return make_response(jsonify({
+                    "code": 500,
+                    "message": f'处理请求时出错: {str(e)}'
+                }), 500)
             finally:
-                # 清理临时文件
+                # 删除临时文件
                 if temp_path and os.path.exists(temp_path):
                     try:
                         os.unlink(temp_path)

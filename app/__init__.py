@@ -42,9 +42,17 @@ def load_model(model_path):
 
 def create_app():
     app = Flask(__name__)
+    # 加载配置
     app.config.from_object(config.DevelopmentConfig)
 
     db.init_app(app)
+    # # 确保在这里导入所有模型
+    # from app.models.user import User
+    # from app.models.history import IdentifyHistory
+    # # 其他模型...
+    #
+    # with app.app_context():
+    #     db.create_all()
     api.init_app(app)
     CORS(app)
 
@@ -57,15 +65,17 @@ def create_app():
     configure_logging(app)
 
     # Import and register blueprints
-    from .routes.auth import auth_ns
+    from .routes.user import user_ns
     from .routes.identify import identify_ns
     from .routes.flower_identify import flower_identify_ns
     from .routes.chr_identify import chr_identify_ns
+    from .routes.identify_history import history_ns
 
-    api.add_namespace(auth_ns, path='/auth')
+    api.add_namespace(user_ns, path='/auth')
     api.add_namespace(identify_ns, path='/identify')
     api.add_namespace(flower_identify_ns, path='/flower_identify')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
+    api.add_namespace(history_ns, path='/history')
 
     # 错误处理程序
     @app.errorhandler(404)
