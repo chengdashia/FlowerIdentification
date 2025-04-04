@@ -31,6 +31,6 @@ class ProductionConfig(BaseConfig):
     HOSTNAME = '134.175.18.239'  # 服务器地址
     PORT = 3306  # 默认端口号
     USERNAME = 'root'
-    PASSWORD = 'root'
-    DATABASE = 'pythonbbs'  # 数据库名
+    PASSWORD = 'flower_identify'
+    DATABASE = 'flower_identify'  # 数据库名
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOSTNAME}:{PORT}/{DATABASE}?charset=utf8mb4"
