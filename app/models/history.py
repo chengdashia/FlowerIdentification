@@ -15,5 +15,17 @@ class IdentifyHistory(db.Model):
     # 外键关联（如果需要）
     # user = db.relationship('User', backref=db.backref('identify_histories', lazy=True))
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'img': self.img,
+            'user_id': self.user_id,
+            'prediction1': self.prediction1,
+            'probability1': self.probability1,
+            'prediction2': self.prediction2,
+            'probability2': self.probability2,
+            'created_time': self.created_time.strftime('%Y-%m-%d %H:%M:%S') if self.created_time else None
+        }
+
     def __repr__(self):
         return f'<GetIdentifyHistory {self.id}>'

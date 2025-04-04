@@ -6,10 +6,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restx import Api
 from flask_cors import CORS
 import config
-import torch
-from torchvision import transforms
-import pandas as pd
-from app.models.network_structure import resnet34
 
 # 初始化 SQLAlchemy
 db = SQLAlchemy()
@@ -24,26 +20,10 @@ api = Api(
 )
 
 
-def get_transform():
-    return transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-
-def load_model(model_path):
-    model = resnet34(include_top=True)
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-    model = model.to('cpu')
-    model.eval()
-    return model
-
-
 def create_app():
     app = Flask(__name__)
     # 加载配置
-    app.config.from_object(config.ProductionConfig)
+    app.config.from_object(config.DevelopmentConfig)
 
     db.init_app(app)
     # # 确保在这里导入所有模型
@@ -56,24 +36,15 @@ def create_app():
     api.init_app(app)
     CORS(app)
 
-    # Load the model, transform, and label data and store them in the app config
-    app.config['MODEL'] = load_model('static/best_model.pth')
-    app.config['TRANSFORM'] = get_transform()
-    app.config['LABEL_DATA'] = pd.read_csv('static/label.csv')
-
     # Logging configuration
     configure_logging(app)
 
     # Import and register blueprints
     from .routes.user import user_ns
-    from .routes.identify import identify_ns
-    from .routes.flower_identify import flower_identify_ns
     from .routes.chr_identify import chr_identify_ns
     from .routes.identify_history import history_ns
 
     api.add_namespace(user_ns, path='/auth')
-    api.add_namespace(identify_ns, path='/identify')
-    api.add_namespace(flower_identify_ns, path='/flower_identify')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
     api.add_namespace(history_ns, path='/history')
 

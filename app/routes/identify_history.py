@@ -63,6 +63,50 @@ class GetIdentifyHistory(Resource):
             return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
 
+@history_ns.route('/history-detail/<int:id>', methods=['post'])
+class GetHistoryDetail(Resource):
+    @history_ns.doc(description='根据ID获取用户识别历史记录详情')
+    def post(self, id):
+        user_id = request.headers.get('token')
+
+        if not user_id:
+            return make_response(jsonify({
+                "code": 400,
+                "message": "User ID is required"
+            }), 400)
+
+        try:
+            # 检查用户是否存在
+            user = User.query.get(user_id)
+            if user is None:
+                return make_response(jsonify({
+                    "code": 400,
+                    "message": "User not found"
+                }), 400)
+
+            # 查找记录
+            record = IdentifyHistory.query.filter_by(id=id, user_id=user_id).first()
+            if record is None:
+                return make_response(jsonify({
+                    "code": 404,
+                    "message": "Record not found"
+                }), 404)
+
+            return make_response(jsonify({
+                "code": 200,
+                "message": "Get Record Detail successfully",
+                "data": record.to_dict()
+            }), 200)
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {str(e)}")
+            return make_response(jsonify({
+                "code": 500,
+                "message": f"Error getting record: {str(e)}"
+            }), 500)
+
+
 @history_ns.route('/delete-history/<int:id>', methods=['DELETE'])
 class DeleteIdentifyHistory(Resource):
     @history_ns.doc(description='根据ID删除用户识别历史记录')
