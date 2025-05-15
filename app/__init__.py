@@ -43,10 +43,12 @@ def create_app():
     from .routes.user import user_ns
     from .routes.chr_identify import chr_identify_ns
     from .routes.identify_history import history_ns
+    from .routes.corn_identify import corn_identify_ns
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
     api.add_namespace(history_ns, path='/history')
+    api.add_namespace(history_ns, path='/corn_identify')
 
     # 错误处理程序
     @app.errorhandler(404)
