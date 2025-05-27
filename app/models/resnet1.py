@@ -1,12 +1,8 @@
-import timm
 import torchvision.models as models
 from torch.nn import init
-import torch.nn.functional as F
 import torch
 import torch.nn as nn
 
-import torch
-import torch.nn as nn
 
 class SEBlock(nn.Module):
     def __init__(self, channel, reduction=16):
@@ -24,6 +20,7 @@ class SEBlock(nn.Module):
         y = self.avg_pool(x).view(b, c)
         y = self.fc(y).view(b, c, 1, 1)
         return x * y.expand_as(x)
+
 
 class SpatialGroupEnhance(nn.Module):
 
@@ -68,6 +65,7 @@ class SpatialGroupEnhance(nn.Module):
         x = x.view(b, c, h, w)
         return x
 
+
 class Resnet(nn.Module):
     def __init__(self, model, num_classes):
         super(Resnet, self).__init__()
@@ -97,14 +95,13 @@ class Resnet(nn.Module):
             nn.Linear(512, num_classes)             # 输出层，5 类分类
         )
         self.att = SpatialGroupEnhance(32)
+
     def forward(self, inputs):
         x = self.features(inputs)
         # x = self.att(x)
         x = self.avgpool(x)
         x = self.classifier(x)
         return x
-
-
 
 
 def resnet1(num_classes=3, pretrained=False):

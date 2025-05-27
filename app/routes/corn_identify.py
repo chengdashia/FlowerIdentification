@@ -37,36 +37,37 @@ def remove_green_region(image, lower_green, upper_green):
 
 def calc_lab_stats(image_bgr):
     """
-    返回：
-        mean_lab  : dict{'L','A','B'}
-        max_a_lab : dict{'L','A','B'}
+    使用 OpenCV 计算 LAB，避免 skimage 内部 float64 占用
+    返回:
+        mean_lab, max_a_lab
     """
-    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    image_lab = rgb2lab(image_rgb / 255.0)
+    # ---------- ① 转 LAB（uint8） ----------
+    lab_u8 = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
 
-    # 去掉白色像素
-    white_mask = np.all(image_rgb == [255, 255, 255], axis=-1)
+    # OpenCV 范围：
+    #   L: 0~255 → 真正 L ≈ (L/255)*100
+    #   a: 0~255 → 真正 a ≈ a - 128
+    #   b: 0~255 → 真正 b ≈ b - 128
+
+    # ---------- ② 过滤白色像素 ----------
+    white_mask = np.all(image_bgr == [255, 255, 255], axis=-1)
     valid_mask = ~white_mask
-
     if not np.any(valid_mask):
-        # 整张图都是白色，返回空结果
         return None, None
 
-    valid_L = image_lab[:, :, 0][valid_mask]
-    valid_A = image_lab[:, :, 1][valid_mask]
-    valid_B = image_lab[:, :, 2][valid_mask]
+    # ---------- ③ 统计 ----------
+    L = lab_u8[:, :, 0][valid_mask].astype(np.float32) * 100.0 / 255
+    A = lab_u8[:, :, 1][valid_mask].astype(np.float32) - 128.0
+    B = lab_u8[:, :, 2][valid_mask].astype(np.float32) - 128.0
 
-    mean_L = float(np.mean(valid_L))
-    mean_A = float(np.mean(valid_A))
-    mean_B = float(np.mean(valid_B))
+    mean_lab = {"L": round(float(np.mean(L)), 2),
+                "A": round(float(np.mean(A)), 2),
+                "B": round(float(np.mean(B)), 2)}
 
-    max_idx = np.argmax(valid_A)
-    max_L = float(valid_L[max_idx])
-    max_A = float(valid_A[max_idx])
-    max_B = float(valid_B[max_idx])
-
-    mean_lab = {"L": round(mean_L, 2), "A": round(mean_A, 2), "B": round(mean_B, 2)}
-    max_a_lab = {"L": round(max_L, 2), "A": round(max_A, 2), "B": round(max_B, 2)}
+    max_idx = np.argmax(A)
+    max_a_lab = {"L": round(float(L[max_idx]), 2),
+                 "A": round(float(A[max_idx]), 2),
+                 "B": round(float(B[max_idx]), 2)}
     return mean_lab, max_a_lab
 
 
