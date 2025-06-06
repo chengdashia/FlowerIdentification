@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 from app.models.resnet import *
 from app.models.resnet1 import *
+from app.models.unet import Unet
 
 
 def load_juhua_model(device=torch.device('cpu')):
@@ -17,3 +18,16 @@ def load_juhua_model(device=torch.device('cpu')):
     net2.load_state_dict(torch.load(model_path2, map_location=device))
     net2.eval()
     return YOLO(yolo_model_path), net1, net2
+
+
+def load_filament_model(device=torch.device('cpu')):
+    # 初始化模型（全局单例）
+    unet_model = Unet(
+        model_path=r'static/best_epoch_weights.pth',
+        num_classes=2,
+        backbone="vgg",
+        input_shape=[512, 512],
+        mix_type=2,
+        cuda=True
+    )
+    return unet_model
