@@ -13,10 +13,6 @@ from app.utils.model_loader import load_filament_model
 filament_identify_bp = Blueprint('filament_identify', __name__)
 filament_identify_ns = Namespace('filament_identify', description='filament identify api')
 
-
-# 定义设备
-device = torch.device('cpu')
-
 # 加载YOLO模型
 unet_model = load_filament_model(device)
 

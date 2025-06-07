@@ -21,7 +21,6 @@ def load_juhua_model(device=torch.device('cpu')):
 
 
 def load_filament_model():
-    device = torch.device('cpu')  # 强制使用CPU
     # 初始化模型（全局单例）
     unet_model = Unet(
         model_path=r'static/best_epoch_weights.pth',
