@@ -13,12 +13,12 @@ from app.models.utils.utils import cvtColor, preprocess_input, resize_image
 
 class Unet(object):
     _defaults = {
-        "model_path": r'D:\PyCharm Community\pythonproject\huasi\best_epoch_weights.pth',
+        "model_path": r'static\best_epoch_weights.pth',
         "num_classes": 2,
         "backbone": "vgg",
         "input_shape": [512, 512],
         "mix_type": 0,
-        "cuda": True,
+        "cuda": False,
     }
 
     def __init__(self, **kwargs):
@@ -40,12 +40,12 @@ class Unet(object):
     def generate(self, onnx=False):
         self.net = unet(num_classes=self.num_classes, backbone=self.backbone)
 
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        device = torch.device('cpu')
         state_dict = torch.load(self.model_path, map_location=device, weights_only=True)
         self.net.load_state_dict(state_dict)
         self.net = self.net.eval()
         if not onnx:
-            if self.cuda:
+            if self.cuda and torch.cuda.is_available():
                 self.net = nn.DataParallel(self.net)
                 self.net = self.net.cuda()
 

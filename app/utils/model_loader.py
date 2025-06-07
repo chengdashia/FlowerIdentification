@@ -20,7 +20,8 @@ def load_juhua_model(device=torch.device('cpu')):
     return YOLO(yolo_model_path), net1, net2
 
 
-def load_filament_model(device=torch.device('cpu')):
+def load_filament_model():
+    device = torch.device('cpu')  # 强制使用CPU
     # 初始化模型（全局单例）
     unet_model = Unet(
         model_path=r'static/best_epoch_weights.pth',
@@ -28,6 +29,6 @@ def load_filament_model(device=torch.device('cpu')):
         backbone="vgg",
         input_shape=[512, 512],
         mix_type=2,
-        cuda=True
+        cuda=False  # 强制使用CPU
     )
     return unet_model

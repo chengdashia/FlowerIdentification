@@ -23,7 +23,7 @@ api = Api(
 def create_app():
     app = Flask(__name__)
     # 加载配置
-    app.config.from_object(config.DevelopmentConfig)
+    app.config.from_object(config.ProductionConfig)
 
     db.init_app(app)
     # # 确保在这里导入所有模型
