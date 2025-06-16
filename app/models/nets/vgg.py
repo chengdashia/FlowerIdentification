@@ -1,5 +1,6 @@
 import torch.nn as nn
 from torch.hub import load_state_dict_from_url
+import torch
 
 
 class VGG(nn.Module):
@@ -67,7 +68,11 @@ cfgs = {
 def VGG16(pretrained, in_channels = 3, **kwargs):
     model = VGG(make_layers(cfgs["D"], batch_norm = False, in_channels = in_channels), **kwargs)
     if pretrained:
-        state_dict = load_state_dict_from_url("https://download.pytorch.org/models/vgg16-397923af.pth", model_dir="./model_data")
+        state_dict = torch.hub.load_state_dict_from_url(
+            "https://download.pytorch.org/models/vgg16-397923af.pth",
+            model_dir="./model_data",
+            weights_only=True
+        )
         model.load_state_dict(state_dict)
     
     del model.avgpool

@@ -55,6 +55,7 @@ class SpatialGroupEnhance(nn.Module):
         x = x.view(b * self.groups, -1, h, w)  # bs*g,dim//g,h,w
         xn = x * self.avg_pool(x)  # bs*g,dim//g,h,w
         xn = xn.sum(dim=1, keepdim=True)  # bs*g,1,h,w
+
         t = xn.view(b * self.groups, -1)  # bs*g,h*w
 
         t = t - t.mean(dim=1, keepdim=True)  # bs*g,h*w
@@ -108,8 +109,11 @@ class Resnet(nn.Module):
 
 
 def resnet(num_classes=4, pretrained=False):
-    # 加载预训练的 ResNet50 模型
-    model = models.resnet101(pretrained=pretrained)
+    # 加载预训练的 ResNet101 模型
+    if pretrained:
+        model = models.resnet101(weights=models.ResNet101_Weights.IMAGENET1K_V1)
+    else:
+        model = models.resnet101(weights=None)
 
     # 创建自定义的 Resnet 模型，添加分类层
     custom_resnet = Resnet(model, num_classes)
