@@ -6,7 +6,6 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
 from skimage.color import rgb2lab
 from app import api
-import torch
 from app.utils.model_loader import load_filament_model
 
 # 创建蓝图和命名空间
@@ -14,7 +13,7 @@ filament_identify_bp = Blueprint('filament_identify', __name__)
 filament_identify_ns = Namespace('filament_identify', description='filament identify api')
 
 # 加载YOLO模型
-unet_model = load_filament_model(device)
+unet_model = load_filament_model()
 
 
 def decode_base64_to_pil(base64_str):

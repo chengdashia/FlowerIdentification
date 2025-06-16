@@ -23,7 +23,7 @@ api = Api(
 def create_app():
     app = Flask(__name__)
     # 加载配置
-    app.config.from_object(config.ProductionConfig)
+    app.config.from_object(config.DevelopmentConfig)
 
     db.init_app(app)
     # # 确保在这里导入所有模型
@@ -45,16 +45,23 @@ def create_app():
     from .routes.identify_history import history_ns
     from .routes.corn_identify import corn_identify_ns
     from .routes.filament_identify import filament_identify_ns
+    from .routes.leaf_sheath_identify import leaf_sheath_identify_ns
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
     api.add_namespace(history_ns, path='/history')
-    api.add_namespace(history_ns, path='/corn_identify')
-    api.add_namespace(history_ns, path='/filament_identify')
+    api.add_namespace(corn_identify_ns, path='/corn_identify')
+    api.add_namespace(filament_identify_ns, path='/filament_identify')
+    api.add_namespace(leaf_sheath_identify_ns, path='/leaf_sheath_identify')
+
+    # 添加根路由
+    @app.route('/')
+    def index():
+        return render_template('main.html')
 
     # 错误处理程序
     @app.errorhandler(404)
-    def not_found_error():
+    def not_found_error(error):
         app.logger.warning(f'Page not found: {request.url}')
         return render_template('404.html'), 404
 
