@@ -41,10 +41,6 @@ def create_app():
     api.init_app(app)
     CORS(app)
 
-    # 确保上传和结果目录存在
-    os.makedirs(os.path.join(static_folder, 'uploads'), exist_ok=True)
-    os.makedirs(os.path.join(static_folder, 'results'), exist_ok=True)
-
     # Logging configuration
     configure_logging(app)
 
