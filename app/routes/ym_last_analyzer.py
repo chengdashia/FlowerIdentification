@@ -22,8 +22,8 @@ ym_last_analyzer_ns = Namespace('ym_last_analyzer', description='YM Last Shape A
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 # 配置上传目录
-UPLOAD_FOLDER = os.path.join(app_root, 'static', 'YM/uploads')
-RESULT_FOLDER = os.path.join(app_root, 'static', 'YM/results')
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/ym/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/ym/results')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # 确保目录存在
