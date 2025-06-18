@@ -20,9 +20,9 @@ def check_model_file(model_path):
 def load_chr_model(device=torch.device('cpu')):
     try:
         # 检查模型文件
-        yolo_model_path = r'static/yolo_best.pt'
-        model_path1 = r'static/ju_res101_huaxu.pth'
-        model_path2 = r'static/ju_res101_huaxin.pth'
+        yolo_model_path = r'static/models/chr/yolo_best.pt'
+        model_path1 = r'static/models/chr/ju_res101_huaxu.pth'
+        model_path2 = r'static/models/chr/ju_res101_huaxin.pth'
         
         for path in [yolo_model_path, model_path1, model_path2]:
             check_model_file(path)
@@ -45,7 +45,7 @@ def load_chr_model(device=torch.device('cpu')):
 
 def load_filament_model():
     try:
-        model_path = r'static/filament_model.pth'
+        model_path = r'static/models/filament/filament_model.pth'
         check_model_file(model_path)
         
         return Unet(
@@ -63,7 +63,7 @@ def load_filament_model():
 
 def load_leaf_sheath_model():
     try:
-        model_path = r'static/leaf_sheath_model.pth'
+        model_path = r'static/models/leaf/leaf_sheath_model.pth'
         check_model_file(model_path)
         
         return Unet(
@@ -83,8 +83,8 @@ def load_ym_models():
     """加载YM分析所需的模型"""
     try:
         # 配置路径
-        yolo_weights = r'static/ym/best.pt'
-        unet_weights = r'static/ym/best_unet_model.pth'
+        yolo_weights = r'static/models/ym/best.pt'
+        unet_weights = r'static/models/ym/best_unet_model.pth'
 
         # 加载YOLO模型
         yolo_model = YMYOLO(yolo_weights)
