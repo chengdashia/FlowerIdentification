@@ -51,6 +51,7 @@ def create_app():
     # Import and register blueprints
     from .routes.user import user_ns
     from .routes.chr_identify import chr_identify_ns
+    from .routes.chr_identify_file import chr_identify_file_ns
     from .routes.identify_history import history_ns
     from .routes.corn_identify import corn_identify_ns
     from .routes.corn_identify_file import corn_identify_file_ns
@@ -63,6 +64,7 @@ def create_app():
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
+    api.add_namespace(chr_identify_file_ns, path='/chr_identify_file')
     api.add_namespace(history_ns, path='/history')
     api.add_namespace(corn_identify_ns, path='/corn_identify')
     api.add_namespace(corn_identify_file_ns, path='/corn_identify_file')
