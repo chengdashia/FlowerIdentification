@@ -1,7 +1,7 @@
 import cv2
 import torch
 import torchvision.transforms as transforms
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import numpy as np
 import base64
 import io
@@ -12,7 +12,6 @@ from app import api
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 # 创建蓝图和命名空间
 ym_analyzer_bp = Blueprint('ym_analyzer', __name__)
@@ -29,6 +28,24 @@ def decode_base64_to_pil(base64_str):
             base64_str = base64_str.split(",")[-1]
         img_bytes = base64.b64decode(base64_str)
         img_pil = Image.open(io.BytesIO(img_bytes))
+        
+        # 修复图像方向问题
+        try:
+            # 获取EXIF信息中的方向
+            exif = img_pil._getexif()
+            if exif is not None:
+                orientation = exif.get(274)  # 274是方向标签的ID
+                if orientation is not None:
+                    # 根据方向信息旋转图像
+                    if orientation == 3:
+                        img_pil = img_pil.rotate(180, expand=True)
+                    elif orientation == 6:
+                        img_pil = img_pil.rotate(270, expand=True)
+                    elif orientation == 8:
+                        img_pil = img_pil.rotate(90, expand=True)
+        except Exception as e:
+            logger.warning(f"处理图像方向时出错: {e}")
+        
         return img_pil
     except Exception as e:
         logger.error(f"[decode_base64_to_pil] 失败: {e}")
@@ -112,6 +129,9 @@ def split_mask_horizontally(mask_array, add_midlines=True, midline_thickness=2, 
     min_row = np.min(mask_pixels[0])
     max_row = np.max(mask_pixels[0])
 
+    # 添加调试信息
+    logger.info(f"掩码边界: min_row={min_row}, max_row={max_row}, 总高度={max_row-min_row+1}")
+
     # 计算每个分段的高度
     mask_height = max_row - min_row + 1
     segment_height = mask_height / 5
@@ -147,6 +167,9 @@ def split_mask_horizontally(mask_array, add_midlines=True, midline_thickness=2, 
             mask_pixels_in_row = np.sum(mask[midline_row, :] > threshold)
             midline_widths.append(mask_pixels_in_row)
 
+            # 添加调试信息
+            logger.info(f"段{segment+1}: 行范围[{segment_start_row}-{segment_end_row}], 中位线行={midline_row}, 宽度={mask_pixels_in_row}")
+
             # 绘制中位线
             for col in range(width):
                 if mask[midline_row, col] > threshold:
@@ -159,13 +182,8 @@ def split_mask_horizontally(mask_array, add_midlines=True, midline_thickness=2, 
         pil_image = Image.fromarray(cv2.cvtColor(colored_mask, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(pil_image)
 
-        try:
-            font = ImageFont.truetype("arial.ttf", 30)
-        except:
-            try:
-                font = ImageFont.truetype("simhei.ttf", 30)
-            except:
-                font = ImageFont.load_default()
+        # 使用默认字体，不需要加载外部字体
+        font = ImageDraw.Draw(pil_image).font
 
         for i, midline_row in enumerate(midline_positions):
             mask_cols_in_row = np.where(mask[midline_row, :] > threshold)[0]
@@ -173,9 +191,9 @@ def split_mask_horizontally(mask_array, add_midlines=True, midline_thickness=2, 
                 center_col = (mask_cols_in_row[0] + mask_cols_in_row[-1]) // 2
                 number_text = str(i + 1)
 
-                bbox = draw.textbbox((0, 0), number_text, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
+                # 估计文本大小
+                text_width = 20
+                text_height = 20
 
                 text_x = center_col - text_width // 2
                 text_y = midline_row - text_height // 2
@@ -188,7 +206,7 @@ def split_mask_horizontally(mask_array, add_midlines=True, midline_thickness=2, 
                     midline_row + circle_radius
                 ], fill='white', outline='black', width=2)
 
-                draw.text((text_x, text_y), number_text, fill='black', font=font)
+                draw.text((text_x, text_y), number_text, fill='black')
 
         colored_mask = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
@@ -213,37 +231,16 @@ def split_mask_horizontally(mask_array, add_midlines=True, midline_thickness=2, 
 def detect_and_crop_ym(image_pil):
     """检测并裁剪YM区域"""
     try:
-        # 创建临时文件保存图像
-        import tempfile
-        import os
-
-        # 创建临时文件
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-        temp_path = temp_file.name
-        temp_file.close()
-
-        # 保存PIL图像到临时文件
-        image_pil.save(temp_path)
+        # 直接从内存处理图像，不需要临时文件
+        img_np = np.array(image_pil.convert('RGB'))
+        img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
         # 使用YOLO模型检测
         logger.info(f"开始YOLO检测，模型类型: {type(yolo_model)}")
-        results = yolo_model.predict(temp_path)
+        results = yolo_model.predict(img_np)
         logger.info(f"YOLO检测完成，结果数量: {len(results)}")
 
-        img = cv2.imread(temp_path)
-
-        # 处理完成后删除临时文件
-        try:
-            os.unlink(temp_path)
-        except:
-            pass
-
-        if img is None:
-            logger.error("无法读取图像文件")
-            return [], None
-
         cropped_images = []
-        session_id = os.path.basename(temp_path).split('.')[0]  # 使用临时文件名作为session_id
 
         for i, result in enumerate(results):
             logger.info(f"处理第{i + 1}个检测结果")
@@ -268,7 +265,7 @@ def detect_and_crop_ym(image_pil):
                         mask_data = mask.data.cpu().numpy()[0]  # 获取掩码数组
 
                         # 将掩码调整到原始图像大小
-                        mask_data = cv2.resize(mask_data, (img.shape[1], img.shape[0]))
+                        mask_data = cv2.resize(mask_data, (img_np.shape[1], img_np.shape[0]))
 
                         # 找到掩码的边界框
                         contours, _ = cv2.findContours((mask_data > 0.5).astype(np.uint8),
@@ -281,7 +278,7 @@ def detect_and_crop_ym(image_pil):
                             x, y, w, h = cv2.boundingRect(cnt)
 
                             # 裁剪图像
-                            crop = img[y:y + h, x:x + w]
+                            crop = img_np[y:y + h, x:x + w]
 
                             if crop.size == 0:
                                 logger.error("裁剪区域为空")
@@ -303,7 +300,7 @@ def detect_and_crop_ym(image_pil):
 
                     if class_name == 'YM':
                         x1, y1, x2, y2 = map(int, box.xyxy.cpu().numpy().flatten())
-                        crop = img[y1:y2, x1:x2]
+                        crop = img_np[y1:y2, x1:x2]
 
                         if crop.size == 0:
                             logger.error("裁剪区域为空")
@@ -316,13 +313,13 @@ def detect_and_crop_ym(image_pil):
                         logger.info(f"成功裁剪YM区域 {len(cropped_images)}")
 
         logger.info(f"总共裁剪了 {len(cropped_images)} 个YM区域")
-        return cropped_images, session_id
+        return cropped_images
 
     except Exception as e:
         logger.error(f"detect_and_crop_ym 函数出错: {str(e)}")
         import traceback
         traceback.print_exc()
-        return [], None
+        return []
 
 
 transform = transforms.Compose([
@@ -337,6 +334,9 @@ def predict_mask(image_pil):
     # 确保图像是RGB模式
     image_pil = image_pil.convert('RGB')
     original_size = image_pil.size
+
+    # 添加调试信息
+    logger.info(f"原始图像尺寸: {original_size}")
 
     # 预处理图像
     image_tensor = transform(image_pil).unsqueeze(0)
@@ -356,6 +356,9 @@ def predict_mask(image_pil):
     mask_pil = Image.fromarray(binary_mask)
     mask_pil = mask_pil.resize((original_size[0], original_size[1]), Image.NEAREST)
     mask_array = np.array(mask_pil)
+
+    # 添加调试信息
+    logger.info(f"掩码尺寸: {mask_array.shape}")
 
     return mask_array
 
@@ -404,6 +407,10 @@ def process_image(image_pil):
                 "ratio_3_5": float(midline_widths[2] / midline_widths[4]),
                 "ratio_1_5": float(midline_widths[0] / midline_widths[4])
             }
+            
+            # 添加调试信息
+            logger.info(f"中位线宽度: {midline_widths}")
+            logger.info(f"比例计算: 1/3={ratios['ratio_1_3']:.3f}, 3/5={ratios['ratio_3_5']:.3f}, 1/5={ratios['ratio_1_5']:.3f}")
 
         # 转换为base64
         original_base64 = encode_image_to_base64(image_pil, format='PNG')
@@ -417,7 +424,6 @@ def process_image(image_pil):
             "midline_widths": [float(w) for w in midline_widths],
             "ratios": ratios,
             "images": {
-                "original": original_base64,
                 "mask": mask_base64,
                 "overlay": overlay_base64,
                 "analysis": analysis_base64
@@ -435,7 +441,7 @@ def analyze_ym_image(image_pil):
     """完整的YM分析流程"""
     try:
         # 检测并裁剪YM区域
-        cropped_images, session_id = detect_and_crop_ym(image_pil)
+        cropped_images = detect_and_crop_ym(image_pil)
 
         if not cropped_images:
             return {
@@ -463,7 +469,6 @@ def analyze_ym_image(image_pil):
             "code": 200,
             "message": "处理成功",
             "data": {
-                "session_id": session_id,
                 "ym_count": len(results),
                 "results": results
             }
