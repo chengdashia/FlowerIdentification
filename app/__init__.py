@@ -56,6 +56,7 @@ def create_app():
     from .routes.filament_identify import filament_identify_ns
     from .routes.filament_identify_file import filament_identify_file_ns
     from .routes.leaf_sheath_identify import leaf_sheath_identify_ns
+    from .routes.leaf_sheath_identify_file import leaf_sheath_identify_file_ns
     from .routes.ym_analyzer import ym_analyzer_ns
     from .routes.ym_last_analyzer import ym_last_analyzer_ns
 
@@ -66,6 +67,7 @@ def create_app():
     api.add_namespace(filament_identify_ns, path='/filament_identify')
     api.add_namespace(filament_identify_file_ns, path='/filament_identify_file')
     api.add_namespace(leaf_sheath_identify_ns, path='/leaf_sheath_identify')
+    api.add_namespace(leaf_sheath_identify_file_ns, path='/leaf_sheath_identify_file')
     api.add_namespace(ym_analyzer_ns, path='/ym_analyzer')
     api.add_namespace(ym_last_analyzer_ns, path='/ym_last_analyzer')
 
