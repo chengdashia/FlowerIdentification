@@ -1,11 +1,14 @@
 import os
 from ultralytics import YOLO
+from app.models.ym.ultralytics import YOLO as YMYOLO
 from app.models.resnet import *
 from app.models.resnet1 import *
 from app.models.unet import Unet
+from app.models.ym.YMUNet import YMUNet
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 def check_model_file(model_path):
     if not os.path.exists(model_path):
@@ -13,7 +16,8 @@ def check_model_file(model_path):
     if os.path.getsize(model_path) == 0:
         raise ValueError(f"模型文件为空: {model_path}")
 
-def load_juhua_model(device=torch.device('cpu')):
+
+def load_chr_model(device=torch.device('cpu')):
     try:
         # 检查模型文件
         yolo_model_path = r'static/yolo_best.pt'
@@ -38,6 +42,7 @@ def load_juhua_model(device=torch.device('cpu')):
         logger.error(f"加载菊花模型时出错: {str(e)}")
         raise
 
+
 def load_filament_model():
     try:
         model_path = r'static/filament_model.pth'
@@ -55,6 +60,7 @@ def load_filament_model():
         logger.error(f"加载花丝模型时出错: {str(e)}")
         raise
 
+
 def load_leaf_sheath_model():
     try:
         model_path = r'static/leaf_sheath_model.pth'
@@ -71,3 +77,27 @@ def load_leaf_sheath_model():
     except Exception as e:
         logger.error(f"加载叶鞘模型时出错: {str(e)}")
         raise
+
+
+def load_ym_models():
+    """加载YM分析所需的模型"""
+    try:
+        # 配置路径
+        yolo_weights = r'static/ym/best.pt'
+        unet_weights = r'static/ym/best_unet_model.pth'
+
+        # 加载YOLO模型
+        yolo_model = YMYOLO(yolo_weights)
+
+        # 加载U-Net模型
+        device = torch.device('cpu')
+        unet_model = YMUNet(n_channels=3, n_classes=1, n_filters=32)
+        unet_model.load_state_dict(torch.load(unet_weights, map_location=device))
+        unet_model.to(device)
+        unet_model.eval()
+
+        return yolo_model, unet_model
+
+    except Exception as e:
+        print(f"加载YM模型失败: {e}")
+        raise e

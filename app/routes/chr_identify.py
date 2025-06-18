@@ -11,8 +11,12 @@ from torchvision import transforms
 from app import api
 from app.models.history import IdentifyHistory
 from PIL import Image
-from app.utils.model_loader import load_juhua_model
+from app.utils.model_loader import load_chr_model
 from app.utils.image_processing import detect_and_crop
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # 创建蓝图和命名空间
 chr_identify_bp = Blueprint('chr_identify', __name__)
@@ -29,7 +33,7 @@ index_to_label2 = {0: "00", 1: "01", 2: "02"}
 device = torch.device('cpu')
 
 # 加载YOLO模型
-yolo_model, net1, net2 = load_juhua_model(device)
+yolo_model, net1, net2 = load_chr_model(device)
 
 
 def allowed_file(filename):
@@ -64,7 +68,7 @@ def predict_with_probabilities(image_path, model, index_to_label):
     try:
         pil_image = Image.open(image_path).convert('RGB')
     except Exception as e:
-        print(f"无法打开图像 {image_path}: {e}")
+        logger.error(f"无法打开图像 {image_path}: {e}")
         return None, 0, []
 
     # 处理图像
@@ -91,16 +95,8 @@ def predict_image(image_path):
     try:
         # 检查图像是否存在
         if not os.path.exists(image_path):
-            print(f"图像不存在: {image_path}")
+            logger.error(f"图像不存在: {image_path}")
             return None
-
-        # 判断图像类别
-        image_class = "unknown"
-        filename = os.path.basename(image_path).lower()
-        if "front" in filename:
-            image_class = "front"
-        elif "back" in filename:
-            image_class = "back"
 
         # 性状1预测
         prediction1, prob1, all_probs1 = predict_with_probabilities(image_path, net1, index_to_label1)
@@ -137,7 +133,7 @@ def predict_image(image_path):
         }
 
     except Exception as e:
-        print(f"预测图像时出错: {image_path} - 错误信息: {e}")
+        logger.error(f"预测图像时出错: {image_path} - 错误信息: {e}")
         return None
 
 
@@ -164,7 +160,7 @@ def decode_base64_to_image(base64_data, save_path=None):
         return image
 
     except Exception as e:
-        print(f"解码base64图像时出错: {e}")
+        logger.error(f"解码base64图像时出错: {e}")
         return None
 
 
@@ -338,7 +334,7 @@ class ImagePredict(Resource):
                     try:
                         os.unlink(temp_path)
                     except Exception as e:
-                        print(f"删除临时文件时出错: {e}")
+                        logger.error(f"删除临时文件时出错: {e}")
 
 
 # 注册命名空间

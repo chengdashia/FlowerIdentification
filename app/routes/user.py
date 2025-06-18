@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Resource, Namespace, fields
 from app import db, api
 from app.models.user import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 user_bp = Blueprint('user', __name__)
 user_ns = Namespace('user', description='Authentication related operations')
@@ -50,7 +53,7 @@ class Register(Resource):
                 "message": "User registered successfully"
             }), 200)
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({
                 "code": 500,
                 "message": f"Error: {str(e)}"
@@ -89,7 +92,7 @@ class Login(Resource):
                 }
             }), 200)
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({
                 "code": 500,
                 "message": f"Error: {str(e)}"
@@ -128,7 +131,8 @@ class UserInfo(Resource):
                 }
             }), 200)
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.error(
+                f"Error: {str(e)}")
             return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
 
@@ -174,7 +178,7 @@ class UpdateUserInfo(Resource):
                 "message": "修改成功！！！！"
             }), 200)
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
 
@@ -229,7 +233,7 @@ class UpdateUserPassword(Resource):
                 "message": "密码修改成功！"
             }), 200)
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
 

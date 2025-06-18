@@ -7,6 +7,10 @@ from flask_restx import Namespace, Resource
 from skimage.color import rgb2lab
 from app import api
 from app.utils.model_loader import load_leaf_sheath_model
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 # 创建蓝图和命名空间
 leaf_sheath_identify_bp = Blueprint('leaf_sheath_identify', __name__)
@@ -25,7 +29,7 @@ def decode_base64_to_pil(base64_str):
         img_pil = Image.open(io.BytesIO(img_bytes))
         return img_pil
     except Exception as e:
-        print(f"[decode_base64_to_pil] 失败: {e}")
+        logger.error(f"[decode_base64_to_pil] 失败: {e}")
         return None
 
 
@@ -38,7 +42,7 @@ def encode_image_to_base64(img_array, format='JPEG'):
         img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
         return img_str
     except Exception as e:
-        print(f"[encode_image_to_base64] 失败: {e}")
+        logger.error(f"[encode_image_to_base64] 失败: {e}")
         return None
 
 
@@ -73,7 +77,7 @@ def create_comparison_image(original_img, red_region):
 
         return comparison_base64
     except Exception as e:
-        print(f"创建对比图像失败: {e}")
+        logger.error(f"创建对比图像失败: {e}")
         return None
 
 
@@ -129,7 +133,7 @@ def process_image(pil_image):
         }
 
     except Exception as e:
-        print(f"处理图像时出错: {str(e)}")
+        logger.error(f"处理图像时出错: {str(e)}")
         return None
 
 

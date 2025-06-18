@@ -4,7 +4,10 @@ import numpy as np
 from app import api
 from flask_restx import Namespace, Resource
 from flask import request, jsonify, Blueprint, make_response
-from skimage.color import rgb2lab
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 # 创建蓝图和命名空间
@@ -83,7 +86,7 @@ def decode_base64_to_image(base64_str):
         img_bgr = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
         return img_bgr
     except Exception as e:
-        print(f"[decode_base64_to_image] 失败: {e}")
+        logger.error(f"[decode_base64_to_image] 失败: {e}")
         return None
 
 

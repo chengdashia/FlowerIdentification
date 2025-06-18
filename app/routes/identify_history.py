@@ -3,6 +3,10 @@ from flask_restx import Resource, Namespace
 from app import api, db
 from app.models.user import User
 from app.models.history import IdentifyHistory
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 history_bp = Blueprint('history', __name__)
 history_ns = Namespace('history', description='Identify History related operations')
@@ -59,7 +63,7 @@ class GetIdentifyHistory(Resource):
             }), 200)
 
         except Exception as e:
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({"message": f"Error: {str(e)}"}), 500)
 
 
@@ -100,7 +104,7 @@ class GetHistoryDetail(Resource):
 
         except Exception as e:
             db.session.rollback()
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({
                 "code": 500,
                 "message": f"Error getting record: {str(e)}"
@@ -154,7 +158,7 @@ class DeleteIdentifyHistory(Resource):
 
         except Exception as e:
             db.session.rollback()
-            print(f"Error: {str(e)}")
+            logger.error(f"Error: {str(e)}")
             return make_response(jsonify({
                 "code": 500,
                 "message": f"Error deleting record: {str(e)}"

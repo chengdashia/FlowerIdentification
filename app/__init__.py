@@ -22,6 +22,7 @@ api = Api(
 
 def create_app():
     app = Flask(__name__)
+    app.json.ensure_ascii = False  # 解决中文乱码问题
     # 加载配置
     app.config.from_object(config.DevelopmentConfig)
 
@@ -46,6 +47,7 @@ def create_app():
     from .routes.corn_identify import corn_identify_ns
     from .routes.filament_identify import filament_identify_ns
     from .routes.leaf_sheath_identify import leaf_sheath_identify_ns
+    from .routes.ym_analyzer import ym_analyzer_ns
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
@@ -53,6 +55,7 @@ def create_app():
     api.add_namespace(corn_identify_ns, path='/corn_identify')
     api.add_namespace(filament_identify_ns, path='/filament_identify')
     api.add_namespace(leaf_sheath_identify_ns, path='/leaf_sheath_identify')
+    api.add_namespace(ym_analyzer_ns, path='/ym_analyzer')
 
     # 添加根路由
     @app.route('/')
@@ -83,15 +86,36 @@ def configure_logging(app):
     if not os.path.exists('logs'):
         os.mkdir('logs')
 
+    # 创建格式化器
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    )
+
     # 创建一个旋转文件处理器
     file_handler = RotatingFileHandler('logs/myapp.log', maxBytes=10240, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
+    file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
+
+    # 创建一个控制台处理器
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.INFO)
+
+    # 配置根日志记录器，这样所有使用 logging.getLogger() 的记录器都会继承这个配置
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    
+    # 清除现有的处理器
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
+    # 添加处理器到根日志记录器
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
 
     # 将处理器添加到 Flask 的日志记录器中
     app.logger.addHandler(file_handler)
+    app.logger.addHandler(console_handler)
 
     # 设置日志级别
     app.logger.setLevel(logging.INFO)
