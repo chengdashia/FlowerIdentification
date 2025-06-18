@@ -53,6 +53,7 @@ def create_app():
     from .routes.chr_identify import chr_identify_ns
     from .routes.identify_history import history_ns
     from .routes.corn_identify import corn_identify_ns
+    from .routes.corn_identify_file import corn_identify_file_ns
     from .routes.filament_identify import filament_identify_ns
     from .routes.filament_identify_file import filament_identify_file_ns
     from .routes.leaf_sheath_identify import leaf_sheath_identify_ns
@@ -64,6 +65,7 @@ def create_app():
     api.add_namespace(chr_identify_ns, path='/chr_identify')
     api.add_namespace(history_ns, path='/history')
     api.add_namespace(corn_identify_ns, path='/corn_identify')
+    api.add_namespace(corn_identify_file_ns, path='/corn_identify_file')
     api.add_namespace(filament_identify_ns, path='/filament_identify')
     api.add_namespace(filament_identify_file_ns, path='/filament_identify_file')
     api.add_namespace(leaf_sheath_identify_ns, path='/leaf_sheath_identify')
@@ -75,11 +77,6 @@ def create_app():
     @app.route('/')
     def index():
         return render_template('main.html')
-
-    # 添加测试路由
-    @app.route('/test_upload')
-    def test_upload():
-        return render_template('upload.html')
 
     # 错误处理程序
     @app.errorhandler(404)
