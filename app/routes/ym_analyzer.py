@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # 创建蓝图和命名空间
 ym_analyzer_bp = Blueprint('ym_analyzer', __name__)
-ym_analyzer_ns = Namespace('ym_analyzer', description='YM shape analysis API')
+ym_analyzer_ns = Namespace('ym_analyzer', description='YM shape analysis API 使用base64编码的图片进行分析')
 
 # 加载模型
 yolo_model, unet_model = load_ym_models()

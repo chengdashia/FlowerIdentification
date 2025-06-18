@@ -21,7 +21,11 @@ api = Api(
 
 
 def create_app():
-    app = Flask(__name__)
+    # 获取应用根目录的绝对路径
+    app_root = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    static_folder = os.path.join(app_root, 'static')
+    
+    app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
     app.json.ensure_ascii = False  # 解决中文乱码问题
     # 加载配置
     app.config.from_object(config.DevelopmentConfig)
@@ -37,6 +41,10 @@ def create_app():
     api.init_app(app)
     CORS(app)
 
+    # 确保上传和结果目录存在
+    os.makedirs(os.path.join(static_folder, 'uploads'), exist_ok=True)
+    os.makedirs(os.path.join(static_folder, 'results'), exist_ok=True)
+
     # Logging configuration
     configure_logging(app)
 
@@ -48,6 +56,7 @@ def create_app():
     from .routes.filament_identify import filament_identify_ns
     from .routes.leaf_sheath_identify import leaf_sheath_identify_ns
     from .routes.ym_analyzer import ym_analyzer_ns
+    from .routes.ym_last_analyzer import ym_last_analyzer_ns
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
@@ -56,11 +65,17 @@ def create_app():
     api.add_namespace(filament_identify_ns, path='/filament_identify')
     api.add_namespace(leaf_sheath_identify_ns, path='/leaf_sheath_identify')
     api.add_namespace(ym_analyzer_ns, path='/ym_analyzer')
+    api.add_namespace(ym_last_analyzer_ns, path='/ym_last_analyzer')
 
     # 添加根路由
     @app.route('/')
     def index():
         return render_template('main.html')
+
+    # 添加测试路由
+    @app.route('/test_upload')
+    def test_upload():
+        return render_template('upload.html')
 
     # 错误处理程序
     @app.errorhandler(404)
