@@ -9,7 +9,7 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Resource, Namespace
 from torchvision import transforms
 from app import api
-from app.models.history import IdentifyHistory
+from app.models.history_base64 import IdentifyHistory
 from PIL import Image
 from app.utils.model_loader import load_chr_model
 from app.utils.image_processing import detect_and_crop

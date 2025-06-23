@@ -6,7 +6,8 @@ from PIL import Image, ImageDraw
 import numpy as np
 from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
-from app import api
+from app import api, db
+from app.models.history import YmHistory
 import logging
 from werkzeug.utils import secure_filename
 import uuid
@@ -322,6 +323,7 @@ class IntegratedYMAnalyzer:
                 # 存储分析结果
                 analysis_result = {
                     'image_name': base_name,
+                    'crop_path': crop_path,
                     'shape_type': shape_result,
                     'midline_widths': midline_widths,
                     'mask_path': mask_path,
@@ -350,6 +352,7 @@ class IntegratedYMAnalyzer:
                 logger.error(f"❌ 形状分析失败: {e}")
                 analysis_result = {
                     'image_name': base_name,
+                    'crop_path': crop_path,
                     'shape_type': f"分析失败: {e}",
                     'midline_widths': [],
                     'mask_path': mask_path,
@@ -457,26 +460,67 @@ class YMLastAnalyze(Resource):
                         mask_relative_path = os.path.relpath(result['mask_path'], static_dir)
                         overlay_relative_path = os.path.relpath(result['overlay_path'], static_dir)
                         analysis_relative_path = os.path.relpath(result['analysis_path'], static_dir) if result['analysis_path'] else None
+                        crop_relative_path = os.path.relpath(result['crop_path'], static_dir) if result['crop_path'] else None
+                        upload_relative_path = os.path.relpath(upload_path, static_dir) if upload_path else None
+
+                        # 格式化为URL
+                        mask_url = f"/static/{mask_relative_path.replace(os.sep, '/')}"
+                        overlay_url = f"/static/{overlay_relative_path.replace(os.sep, '/')}"
+                        analysis_url = f"/static/{analysis_relative_path.replace(os.sep, '/')}" if analysis_relative_path else None
+                        crop_url = f"/static/{crop_relative_path.replace(os.sep, '/')}" if crop_relative_path else None
+                        upload_url = f"/static/{upload_relative_path.replace(os.sep, '/')}" if upload_relative_path else None
 
                         result_data = {
                             "shape_type": result['shape_type'],
                             "midline_widths": [float(w) for w in result['midline_widths']],
                             "image": {
-                                "mask": f"/static/{mask_relative_path.replace(os.sep, '/')}",
-                                "overlay": f"/static/{overlay_relative_path.replace(os.sep, '/')}",
-                                "analysis": f"/static/{analysis_relative_path.replace(os.sep, '/')}" if analysis_relative_path else None
+                                "mask": mask_url,
+                                "overlay": overlay_url,
+                                "analysis": analysis_url
                             }
                         }
 
                         # 计算比值
+                        ratios = {}
                         if len(result['midline_widths']) == 5 and result['midline_widths'][2] != 0 and result['midline_widths'][4] != 0:
-                            result_data["ratios"] = {
+                            ratios = {
                                 "ratio_1_3": float(result['midline_widths'][0] / result['midline_widths'][2]),
                                 "ratio_3_5": float(result['midline_widths'][2] / result['midline_widths'][4]),
                                 "ratio_1_5": float(result['midline_widths'][0] / result['midline_widths'][4])
                             }
+                        result_data["ratios"] = ratios
 
                         results.append(result_data)
+
+                        # 入库操作
+                        try:
+                            user_id = request.headers.get('token')
+                            if user_id:
+                                widths = result['midline_widths']
+                                history = YmHistory(
+                                    user_id=user_id,
+                                    upload_path=upload_url,
+                                    cropped_ym_path=crop_url,
+                                    mask_path=mask_url,
+                                    overlay_path=overlay_url,
+                                    analysis_path=analysis_url,
+                                    shape_type=result['shape_type'],
+                                    width1=widths[0] if len(widths) > 0 else None,
+                                    width2=widths[1] if len(widths) > 1 else None,
+                                    width3=widths[2] if len(widths) > 2 else None,
+                                    width4=widths[3] if len(widths) > 3 else None,
+                                    width5=widths[4] if len(widths) > 4 else None,
+                                    ratio_1_3=ratios.get('ratio_1_3'),
+                                    ratio_3_5=ratios.get('ratio_3_5'),
+                                    ratio_1_5=ratios.get('ratio_1_5'),
+                                    created_time=datetime.now()
+                                )
+                                db.session.add(history)
+                                db.session.commit()
+                        except Exception as e:
+                            db.session.rollback()
+                            logger.error(f"YM历史记录保存失败: {str(e)}")
+
 
                     return make_response(jsonify({
                         "code": 200,

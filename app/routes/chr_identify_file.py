@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Resource, Namespace
 from torchvision import transforms
 from app import api
-from app.models.history import IdentifyHistory
+from app.models.history import ChrHistory
 from PIL import Image
 from app.utils.model_loader import load_chr_model
 from app.utils.image_processing import detect_and_crop
@@ -53,14 +53,6 @@ def allowed_file(filename):
 
 def allowed_mime_type(mime_type):
     return mime_type in ALLOWED_MIME_TYPES
-
-
-def pil_to_base64(pil_img):
-    """将PIL图像转换为base64字符串"""
-    buffer = io.BytesIO()
-    pil_img.save(buffer, format="JPEG")
-    img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
-    return img_str
 
 
 def predict_with_probabilities(image_path, model, index_to_label):
@@ -193,6 +185,7 @@ def process_image_file(image_path, result_dir):
         return results, None
 
     except Exception as e:
+        logger.error(f"处理图像文件时出错: {e}")
         return None, str(e)
 
 
@@ -320,13 +313,9 @@ class ImagePredict(Resource):
             # 确保返回包含所有字段
             required_keys = {'prediction1', 'prediction2', 'probability1', 'probability2'}
             if result and required_keys.issubset(result.keys()):
-                # 将图像转换为base64用于存储
-                pil_image = Image.open(absolute_path).convert('RGB')
-                base64_image = pil_to_base64(pil_image)
-
                 # 入库操作
-                history = IdentifyHistory(
-                    img=base64_image,
+                history = ChrHistory(
+                    predicted_image_path=image_path,
                     user_id=user_id,
                     prediction1=result['prediction1'],
                     probability1=result['probability1'],

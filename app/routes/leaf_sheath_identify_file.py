@@ -4,7 +4,8 @@ from PIL import Image
 from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
 from skimage.color import rgb2lab
-from app import api
+from app import api, db
+from app.models.history import LeafSheathHistory
 from app.utils.model_loader import load_leaf_sheath_model
 import logging
 from werkzeug.utils import secure_filename
@@ -201,15 +202,45 @@ class ImagePredict(Resource):
                     red_region_relative_path = os.path.relpath(result["red_region_path"], static_dir)
                     comparison_relative_path = os.path.relpath(result["comparison_path"], static_dir) if result["comparison_path"] else None
 
+                    # 格式化为URL路径
+                    white_bg_url = f"/static/{white_bg_relative_path.replace(os.sep, '/')}"
+                    red_region_url = f"/static/{red_region_relative_path.replace(os.sep, '/')}"
+                    comparison_url = f"/static/{comparison_relative_path.replace(os.sep, '/')}" if comparison_relative_path else None
+                    upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
+
+                    # 入库操作
+                    try:
+                        user_id = request.headers.get('token')
+                        if user_id:
+                            history = LeafSheathHistory(
+                                user_id=user_id,
+                                upload_path=upload_url,
+                                white_background_path=white_bg_url,
+                                red_region_path=red_region_url,
+                                comparison_path=comparison_url,
+                                original_lab_l=result['original_lab']['L'],
+                                original_lab_a=result['original_lab']['A'],
+                                original_lab_b=result['original_lab']['B'],
+                                red_region_lab_l=result['red_region_lab']['L'],
+                                red_region_lab_a=result['red_region_lab']['A'],
+                                red_region_lab_b=result['red_region_lab']['B'],
+                                created_time=datetime.now()
+                            )
+                            db.session.add(history)
+                            db.session.commit()
+                    except Exception as e:
+                        db.session.rollback()
+                        logger.error(f"历史记录保存失败: {str(e)}")
+
                     # 返回结果
                     return make_response(jsonify({
                         "code": 200,
                         "message": "处理成功",
                         "data": {
                             "images": {
-                                "white_background": f"/static/{white_bg_relative_path.replace(os.sep, '/')}",
-                                "red_region": f"/static/{red_region_relative_path.replace(os.sep, '/')}",
-                                "comparison": f"/static/{comparison_relative_path.replace(os.sep, '/')}" if comparison_relative_path else None
+                                "white_background": white_bg_url,
+                                "red_region": red_region_url,
+                                "comparison": comparison_url
                             },
                             "lab_values": {
                                 "original": {

@@ -1,7 +1,8 @@
 import os
 import cv2
 import numpy as np
-from app import api
+from app import api, db
+from app.models.history import CornHistory
 from flask_restx import Namespace, Resource
 from flask import request, jsonify, Blueprint, make_response
 import logging
@@ -176,12 +177,37 @@ class ColorAnalyze(Resource):
                     # 转换为相对路径 - 相对于static目录
                     static_dir = os.path.join(app_root, 'static')
                     processed_relative_path = os.path.relpath(processed_image_path, static_dir)
+                    processed_url = f"/static/{processed_relative_path.replace(os.sep, '/')}"
+                    upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
+
+                    # 入库操作
+                    try:
+                        user_id = request.headers.get('token')
+                        if user_id:
+                            history = CornHistory(
+                                user_id=user_id,
+                                upload_path=upload_url,
+                                processed_image_path=processed_url,
+                                mean_lab_l=mean_lab['L'],
+                                mean_lab_a=mean_lab['A'],
+                                mean_lab_b=mean_lab['B'],
+                                max_a_lab_l=max_a_lab['L'],
+                                max_a_lab_a=max_a_lab['A'],
+                                max_a_lab_b=max_a_lab['B'],
+                                created_time=datetime.now()
+                            )
+                            db.session.add(history)
+                            db.session.commit()
+                    except Exception as e:
+                        db.session.rollback()
+                        logger.error(f"历史记录保存失败: {str(e)}")
+
 
                     return make_response(jsonify({
                         "code": 200,
                         "message": "图像处理成功",
                         "data": {
-                            "processed_image": f"/static/{processed_relative_path.replace(os.sep, '/')}",
+                            "processed_image": processed_url,
                             "mean_lab": mean_lab,
                             "max_a_lab": max_a_lab
                         }
