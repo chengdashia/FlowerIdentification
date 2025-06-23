@@ -122,13 +122,12 @@ class GetHistoryDetail(Resource):
             }), 500)
 
 
-@history_ns.route('/delete-history/<int:id>', methods=['DELETE'])
+@history_ns.route('/delete-history/<string:type>/<int:id>', methods=['DELETE'])
 class DeleteIdentifyHistory(Resource):
     @history_ns.doc(description='根据ID和类型删除用户识别历史记录')
     @history_ns.param('type', '记录类型', type=str, required=True, enum=list(HISTORY_MODELS.keys()))
-    def delete(self, id):
+    def delete(self, type, id):
         user_id = request.headers.get('token')
-        history_type = request.args.get('type')
 
         if not user_id:
             return make_response(jsonify({
@@ -136,7 +135,7 @@ class DeleteIdentifyHistory(Resource):
                 "message": "User ID is required"
             }), 400)
 
-        if not history_type or history_type not in HISTORY_MODELS:
+        if not type or type not in HISTORY_MODELS:
             return make_response(jsonify({"message": "Invalid history type specified"}), 400)
 
         try:
@@ -148,7 +147,7 @@ class DeleteIdentifyHistory(Resource):
                     "message": "User not found"
                 }), 400)
 
-            Model = HISTORY_MODELS[history_type]
+            Model = HISTORY_MODELS[type]
 
             # 查找记录
             record = Model.query.get(id)
