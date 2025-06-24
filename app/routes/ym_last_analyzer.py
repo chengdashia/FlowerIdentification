@@ -363,12 +363,12 @@ class IntegratedYMAnalyzer:
 
         return analysis_results
 
-    def run_complete_analysis_pipeline(self, image_path, temp_dir="temp_crops", result_dir="analysis_results"):
+    def run_complete_analysis_pipeline(self, image_path, result_dir="analysis_results"):
         """
         运行完整的分析流程：检测 -> 裁剪 -> 掩码预测 -> 形状分析
         """
         # 步骤1: 检测并裁剪YM区域
-        cropped_paths = self.detect_and_crop_ym(image_path, temp_dir)
+        cropped_paths = self.detect_and_crop_ym(image_path, result_dir)
 
         if not cropped_paths:
             logger.error("❌ 未检测到YM区域，分析结束")
@@ -434,14 +434,12 @@ class YMLastAnalyze(Resource):
 
                 # 创建结果目录
                 result_dir = os.path.join(RESULT_FOLDER, f"{name}_{timestamp}_{unique_id}")
-                temp_dir = os.path.join(RESULT_FOLDER, f"temp_{name}_{timestamp}_{unique_id}")
 
                 try:
                     # 获取分析器并运行分析
                     analyzer_instance = get_analyzer()
                     analysis_results = analyzer_instance.run_complete_analysis_pipeline(
                         image_path=upload_path,
-                        temp_dir=temp_dir,
                         result_dir=result_dir
                     )
 
