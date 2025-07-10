@@ -32,7 +32,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载模型
-yolo_model, unet_model, zl_model, ym_model= load_ym_models()
+yolo_model, unet_model = load_ym_models()
 
 # 定义预处理转换
 transform = transforms.Compose([

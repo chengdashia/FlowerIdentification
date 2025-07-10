@@ -83,44 +83,8 @@ def load_ym_models():
     """加载YM分析所需的模型"""
     try:
         # 配置路径
-        yolo_weights = r'static/models/ym2/best.pt'
-        unet_weights = r'static/models/ym2/best_unet_model.pth'
-        zl_weights = r'static/models/ym2/YMCK-best.pt'
-
-        # 加载YOLO模型
-        yolo_model = YMYOLO(yolo_weights)
-        zl_model = YMYOLO(zl_weights)
-
-        # 加载U-Net模型
-        device = torch.device('cpu')
-        unet_model = YMUNet(n_channels=3, n_classes=1, n_filters=32)
-        unet_model.load_state_dict(torch.load(unet_weights, map_location=device))
-        unet_model.to(device)
-        unet_model.eval()
-
-        # ym-unet
-        ym_unet = Unet(
-            model_path=r'static/models/ym2/best_epoch_weights.pth',
-            num_classes=3,
-            backbone="vgg",
-            input_shape=[512, 512],
-            mix_type=0,
-        )
-
-        return yolo_model, unet_model, zl_model, ym_unet
-
-    except Exception as e:
-        print(f"加载YM模型失败: {e}")
-        raise e
-
-
-def load_ym2_models():
-    """加载YM分析所需的模型"""
-    try:
-        # 配置路径
-        yolo_weights = r"static\models\ym2\best.pt"
-        unet_weights = r"static\models\ym2\best_unet_model.pth"
-        model_path = r"static\weights\ym2\YMCK-best.pt"
+        yolo_weights = r'static/models/ym/best.pt'
+        unet_weights = r'static/models/ym/best_unet_model.pth'
 
         # 加载YOLO模型
         yolo_model = YMYOLO(yolo_weights)
@@ -137,5 +101,3 @@ def load_ym2_models():
     except Exception as e:
         print(f"加载YM模型失败: {e}")
         raise e
-
-

@@ -57,7 +57,6 @@ def create_app():
     from .routes.leaf_sheath_identify_file import leaf_sheath_identify_file_ns
     from .routes.ym_analyzer import ym_analyzer_ns
     from .routes.ym_last_analyzer import ym_last_analyzer_ns
-    from .routes.ym_all_analyzer import ym_all_analyzer_ns
     from .routes.statistics import statistics_ns
 
     api.add_namespace(user_ns, path='/auth')
@@ -72,7 +71,6 @@ def create_app():
     api.add_namespace(leaf_sheath_identify_file_ns, path='/leaf_sheath_identify_file')
     api.add_namespace(ym_analyzer_ns, path='/ym_analyzer')
     api.add_namespace(ym_last_analyzer_ns, path='/ym_last_analyzer')
-    api.add_namespace(ym_all_analyzer_ns, path='/ym_all_analyzer')
     api.add_namespace(statistics_ns, path='/statistics')
 
     # 添加根路由
