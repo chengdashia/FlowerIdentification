@@ -13,12 +13,13 @@ from werkzeug.utils import secure_filename
 import uuid
 from datetime import datetime
 from app.utils.model_loader import load_ym_models
+from skimage import color
 
 logger = logging.getLogger(__name__)
 
 # 创建蓝图和命名空间
-ym_last_analyzer_bp = Blueprint('ym_last_analyzer', __name__)
-ym_last_analyzer_ns = Namespace('ym_last_analyzer', description='YM Last Shape Analysis API  直接上传图片进行分析')
+ym_all_analyzer_bp = Blueprint('ym_all_analyzer', __name__)
+ym_all_analyzer_ns = Namespace('ym_all_analyzer', description='YM All Shape Analysis API  直接上传图片进行分析')
 
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -32,7 +33,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载模型
-yolo_model, unet_model, zl_model, ym_model= load_ym_models()
+yolo_model, unet_model, zl_model, ym_unet_model = load_ym_models()
 
 # 定义预处理转换
 transform = transforms.Compose([
@@ -41,11 +42,15 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
+sk_short_cm = 5.5
+sk_long_cm = 7.85
+class_names = ['0', 'ZL', 'SK', 'YM']
+
 
 def allowed_file(filename):
     """检查文件扩展名是否允许"""
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def analyze_mask_shape(midline_widths):
@@ -206,7 +211,171 @@ class IntegratedYMAnalyzer:
         self.device = torch.device('cpu')
         self.yolo_model = yolo_model
         self.unet_model = unet_model
+        self.zl_model = zl_model
+        self.ym_unet_model = ym_unet_model
         self.transform = transform
+
+    def yolo_detect_crop(self, image_path):
+        img = cv2.imread(image_path)
+        if img is None:
+            logger.error(f"无法读取图像：{image_path}")
+            return None, 0.0
+        results = self.yolo_model.predict(source=image_path, device='cpu')
+
+        best_crop = None
+        best_conf = 0.0
+
+        for result in results:
+            for i, box in enumerate(result.boxes):
+                cls_id = int(box.cls.cpu().numpy().item())
+                class_name = self.yolo_model.names[cls_id]
+                if class_name == 'YM':
+                    conf = float(box.conf.cpu().numpy().item())
+
+                    if conf > best_conf:
+                        x1, y1, x2, y2 = map(int, box.xyxy.cpu().numpy().flatten())
+                        crop = img[y1:y2, x1:x2]
+                        if crop.size == 0:
+                            continue
+
+                        crop_pil = Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
+                        best_crop = crop_pil
+                        best_conf = conf
+
+        if best_crop is None:
+            logger.error(f"未检测到YM目标")
+        else:
+            logger.info(f"已检测到YM目标，置信度：{best_conf:.2f}")
+
+        return best_crop, best_conf
+
+    def process_single_image(self, image_path, result_dir):
+        import matplotlib.pyplot as plt
+        try:
+            cropped_image, best_conf = self.yolo_detect_crop(image_path)
+
+            if cropped_image is None:
+                logger.error("未检测到YM目标，无法进行后续处理")
+                return None
+
+            original_full = cv2.imread(image_path)
+            original_full = cv2.cvtColor(original_full, cv2.COLOR_BGR2RGB)
+
+            original_image = cropped_image.copy()
+            original_array = np.array(original_image)
+
+            r_image = self.ym_unet_model.detect_image(cropped_image)
+
+            GS_CLASS_INDEX = 1
+
+            pred_mask = self.ym_unet_model.get_miou_png(original_image)
+            pred_mask_array = np.array(pred_mask)
+
+            white_bg = np.ones_like(original_array) * 255
+
+            gs_mask = (pred_mask_array == GS_CLASS_INDEX)
+
+            white_bg[gs_mask] = original_array[gs_mask]
+
+            gs_only_image = Image.fromarray(np.uint8(white_bg))
+
+            binary_mask = np.zeros_like(gs_mask, dtype=np.uint8)
+            binary_mask[gs_mask] = 255
+
+            contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # 保存图片路径
+            os.makedirs(result_dir, exist_ok=True)
+            base_name = os.path.splitext(os.path.basename(image_path))[0]
+            gs_only_image_path = os.path.join(result_dir, f"{base_name}_gs_only_image.jpg")
+            r_image_path = os.path.join(result_dir, f"{base_name}_unet_result.jpg")
+            center_part_path = os.path.join(result_dir, f"{base_name}_center_part.jpg")
+
+            gs_only_image.save(gs_only_image_path)
+            r_image.save(r_image_path)
+
+            if contours:
+                max_contour = max(contours, key=cv2.contourArea)
+
+                x, y, w, h = cv2.boundingRect(max_contour)
+
+                x1 = x + w // 4
+                x2 = x + 3 * w // 4
+                y1 = y + h // 4
+                y2 = y + 3 * h // 4
+
+                highlight_image = np.array(gs_only_image.copy())
+
+                cv2.rectangle(highlight_image, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+                cv2.line(highlight_image, (x, y1), (x + w, y1), (0, 0, 255), 2)
+                cv2.line(highlight_image, (x, y2), (x + w, y2), (0, 0, 255), 2)
+                cv2.line(highlight_image, (x1, y), (x1, y + h), (0, 0, 255), 2)
+                cv2.line(highlight_image, (x2, y), (x2, y + h), (0, 0, 255), 2)
+
+                overlay = highlight_image.copy()
+                cv2.rectangle(overlay, (x1, y1), (x2, y2), (255, 0, 0), -1)  # 填充蓝色矩形
+
+                alpha = 0.4
+                cv2.addWeighted(overlay, alpha, highlight_image, 1 - alpha, 0, highlight_image)
+
+                highlight_image_pil = Image.fromarray(highlight_image)
+                highlight_image_path = os.path.join(result_dir, f"{base_name}_highlight.jpg")
+                highlight_image_pil.save(highlight_image_path)
+
+                center_part = np.array(gs_only_image)[y1:y2, x1:x2]
+                center_part_pil = Image.fromarray(center_part)
+                center_part_pil.save(center_part_path)
+
+                # 计算LAB均值和最大值
+                non_white_mask = ~np.all(center_part == 255, axis=2)
+                lab_mean = None
+                lab_max = None
+                if np.any(non_white_mask):
+                    center_part_float = center_part.astype(np.float32) / 255.0
+                    center_part_lab = color.rgb2lab(center_part_float)
+
+                    l_values = center_part_lab[:, :, 0][non_white_mask]
+                    a_values = center_part_lab[:, :, 1][non_white_mask]
+                    b_values = center_part_lab[:, :, 2][non_white_mask]
+
+                    l_mean = float(np.mean(l_values))
+                    a_mean = float(np.mean(a_values))
+                    b_mean = float(np.mean(b_values))
+
+                    l_max = float(np.max(l_values))
+                    a_max = float(np.max(a_values))
+                    b_max = float(np.max(b_values))
+
+                    lab_mean = {'L': l_mean, 'A': a_mean, 'B': b_mean}
+                    lab_max = {'L': l_max, 'A': a_max, 'B': b_max}
+                return {
+                    'gs_only_image': gs_only_image_path,
+                    'unet_result': r_image_path,
+                    'highlight': highlight_image_path,
+                    'center_part': center_part_path,
+                    'confidence': best_conf,
+                    'lab_mean': lab_mean,
+                    'lab_max': lab_max
+                }
+            else:
+                logger.error(f"未检测到果穗轮廓")
+                gs_only_image.save(gs_only_image_path)
+                r_image.save(r_image_path)
+                return {
+                    'gs_only_image': gs_only_image_path,
+                    'unet_result': r_image_path,
+                    'highlight': None,
+                    'center_part': None,
+                    'confidence': best_conf,
+                    'lab_mean': None,
+                    'lab_max': None
+                }
+        except Exception as e:
+            logger.error(f"处理图片时出错: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     def detect_and_crop_ym(self, image_path, output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -379,6 +548,53 @@ class IntegratedYMAnalyzer:
 
         return analysis_results
 
+    def calc_zl_length_single(self, input_image):
+        image_name = os.path.basename(input_image)
+        results = self.zl_model(input_image)
+
+        ratio_x = None
+        ratio_y = None
+        zl_lengths = []
+
+        # 先找 SK 计算比例
+        for r in results:
+            for box in r.boxes:
+                cls_id = int(box.cls[0].item())
+                cls_name = class_names[cls_id]
+                if cls_name == 'SK':
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    width_px = abs(x2 - x1)
+                    height_px = abs(y2 - y1)
+                    ratio_x = sk_long_cm / width_px
+                    ratio_y = sk_short_cm / height_px
+                    break
+
+        # 只处理 ZL
+        for r in results:
+            for box in r.boxes:
+                cls_id = int(box.cls[0].item())
+                cls_name = class_names[cls_id]
+                if cls_name == 'ZL':
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    width_px = abs(x2 - x1)
+                    height_px = abs(y2 - y1)
+                    if ratio_x is not None and ratio_y is not None:
+                        real_width = round(width_px * ratio_x, 2)
+                        real_height = round(height_px * ratio_y, 2)
+                    else:
+                        real_width = real_height = -1
+
+                    zl_lengths.append({
+                        'pixel_width': width_px,
+                        'pixel_height': height_px,
+                        'real_width_cm': real_width,
+                        'real_height_cm': real_height
+                    })
+
+                    logger.info(f"ZL像素长度=({width_px},{height_px})，真实长度=({real_width},{real_height})cm")
+
+        return zl_lengths
+
 
 # 全局分析器实例
 analyzer = None
@@ -392,9 +608,9 @@ def get_analyzer():
     return analyzer
 
 
-@ym_last_analyzer_ns.route('/analyze', methods=['POST'])
+@ym_all_analyzer_ns.route('/analyze', methods=['POST'])
 class YMLastAnalyze(Resource):
-    @ym_last_analyzer_ns.doc(
+    @ym_all_analyzer_ns.doc(
         description='上传图片进行YM形状分析（完整版）',
         responses={
             200: '处理成功',
@@ -425,11 +641,11 @@ class YMLastAnalyze(Resource):
                 filename = secure_filename(image.filename)
                 name, ext = os.path.splitext(filename)
                 new_filename = f"{name}_{timestamp}_{unique_id}{ext}"
-                
+
                 # 保存上传的文件
                 upload_path = os.path.join(UPLOAD_FOLDER, new_filename)
                 image.save(upload_path)
-                
+
                 logger.info(f"文件已保存到: {upload_path}")
 
                 # 创建结果目录
@@ -438,6 +654,7 @@ class YMLastAnalyze(Resource):
                 try:
                     # 获取分析器并运行分析
                     analyzer_instance = get_analyzer()
+                    zl_lengths = analyzer_instance.calc_zl_length_single(upload_path)
                     analysis_results = analyzer_instance.run_complete_analysis_pipeline(
                         image_path=upload_path,
                         result_dir=result_dir
@@ -450,6 +667,23 @@ class YMLastAnalyze(Resource):
                             "data": None
                         }), 400)
 
+                    # 新增：process_single_image处理
+                    process_single_image_result = analyzer_instance.process_single_image(upload_path, result_dir)
+                    # 路径转为相对static
+                    def to_static_url(abs_path):
+                        if abs_path is None:
+                            return None
+                        static_dir = os.path.join(app_root, 'static')
+                        rel_path = os.path.relpath(abs_path, static_dir)
+                        return f"/static/{rel_path.replace(os.sep, '/')}"
+                    process_single_image_urls = None
+                    if process_single_image_result:
+                        img_keys = {'gs_only_image', 'unet_result', 'highlight', 'center_part'}
+                        process_single_image_urls = {
+                            k: to_static_url(v) if k in img_keys and v is not None else v
+                            for k, v in process_single_image_result.items()
+                        }
+
                     # 处理结果，返回图片路径
                     results = []
                     for i, result in enumerate(analysis_results):
@@ -457,8 +691,10 @@ class YMLastAnalyze(Resource):
                         static_dir = os.path.join(app_root, 'static')
                         mask_relative_path = os.path.relpath(result['mask_path'], static_dir)
                         overlay_relative_path = os.path.relpath(result['overlay_path'], static_dir)
-                        analysis_relative_path = os.path.relpath(result['analysis_path'], static_dir) if result['analysis_path'] else None
-                        crop_relative_path = os.path.relpath(result['crop_path'], static_dir) if result['crop_path'] else None
+                        analysis_relative_path = os.path.relpath(result['analysis_path'], static_dir) if result[
+                            'analysis_path'] else None
+                        crop_relative_path = os.path.relpath(result['crop_path'], static_dir) if result[
+                            'crop_path'] else None
                         upload_relative_path = os.path.relpath(upload_path, static_dir) if upload_path else None
 
                         # 格式化为URL
@@ -475,12 +711,15 @@ class YMLastAnalyze(Resource):
                                 "mask": mask_url,
                                 "overlay": overlay_url,
                                 "analysis": analysis_url
-                            }
+                            },
+                            "zl_lengths": zl_lengths,
+                            "process_single_image": process_single_image_urls
                         }
 
                         # 计算比值
                         ratios = {}
-                        if len(result['midline_widths']) == 5 and result['midline_widths'][2] != 0 and result['midline_widths'][4] != 0:
+                        if len(result['midline_widths']) == 5 and result['midline_widths'][2] != 0 and \
+                                result['midline_widths'][4] != 0:
                             ratios = {
                                 "ratio_1_3": float(result['midline_widths'][0] / result['midline_widths'][2]),
                                 "ratio_3_5": float(result['midline_widths'][2] / result['midline_widths'][4]),
@@ -519,7 +758,6 @@ class YMLastAnalyze(Resource):
                             db.session.rollback()
                             logger.error(f"YM历史记录保存失败: {str(e)}")
 
-
                     return make_response(jsonify({
                         "code": 200,
                         "message": "分析完成",
@@ -552,4 +790,4 @@ class YMLastAnalyze(Resource):
 
 
 # 注册命名空间
-api.add_namespace(ym_last_analyzer_ns)
+api.add_namespace(ym_all_analyzer_ns)
