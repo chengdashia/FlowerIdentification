@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
 from skimage.color import rgb2lab
 from app import api, db
-from app.models.history import LeafSheathHistory
+from app.models.history import CornLeafSheathHistory
 from app.utils.model_loader import load_leaf_sheath_model
 import logging
 from werkzeug.utils import secure_filename
@@ -212,7 +212,7 @@ class ImagePredict(Resource):
                     try:
                         user_id = request.headers.get('token')
                         if user_id:
-                            history = LeafSheathHistory(
+                            history = CornLeafSheathHistory(
                                 user_id=user_id,
                                 upload_path=upload_url,
                                 white_background_path=white_bg_url,

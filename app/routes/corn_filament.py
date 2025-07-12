@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from app import api, db
-from app.models.history import CornHistory
+from app.models.history import CornFilamentHistory
 from flask_restx import Namespace, Resource
 from flask import request, jsonify, Blueprint, make_response
 import logging
@@ -184,7 +184,7 @@ class ColorAnalyze(Resource):
                     try:
                         user_id = request.headers.get('token')
                         if user_id:
-                            history = CornHistory(
+                            history = CornFilamentHistory(
                                 user_id=user_id,
                                 upload_path=upload_url,
                                 processed_image_path=processed_url,

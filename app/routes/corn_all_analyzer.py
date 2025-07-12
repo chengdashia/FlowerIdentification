@@ -7,7 +7,7 @@ import numpy as np
 from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
 from app import api, db
-from app.models.history import YmHistory
+from app.models.history import CornShapeHistory
 import logging
 from werkzeug.utils import secure_filename
 import uuid
@@ -734,7 +734,7 @@ class YMLastAnalyze(Resource):
                             user_id = request.headers.get('token')
                             if user_id:
                                 widths = result['midline_widths']
-                                history = YmHistory(
+                                history = CornShapeHistory(
                                     user_id=user_id,
                                     upload_path=upload_url,
                                     cropped_ym_path=crop_url,

@@ -1,8 +1,8 @@
 from app import db
 
 
-class FilamentHistory(db.Model):
-    __tablename__ = 'filament_history'
+class CornFilamentNatureHistory(db.Model):
+    __tablename__ = 'corn_filament_nature_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False, comment='用户id')
     upload_path = db.Column(db.String(255), nullable=False, comment='上传图片路径')
@@ -31,8 +31,8 @@ class FilamentHistory(db.Model):
         }
 
 
-class CornHistory(db.Model):
-    __tablename__ = 'corn_history'
+class CornFilamentHistory(db.Model):
+    __tablename__ = 'corn_filament_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False, comment='用户id')
     upload_path = db.Column(db.String(255), nullable=False, comment='上传图片路径')
@@ -81,8 +81,8 @@ class ChrHistory(db.Model):
         }
 
 
-class LeafSheathHistory(db.Model):
-    __tablename__ = 'leaf_sheath_history'
+class CornLeafSheathHistory(db.Model):
+    __tablename__ = 'corn_leaf_sheath_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False, comment='用户id')
     upload_path = db.Column(db.String(255), nullable=False, comment='上传图片路径')
@@ -111,8 +111,8 @@ class LeafSheathHistory(db.Model):
         }
 
 
-class YmHistory(db.Model):
-    __tablename__ = 'ym_history'
+class CornShapeHistory(db.Model):
+    __tablename__ = 'corn_shape_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False, comment='用户id')
     upload_path = db.Column(db.String(255), nullable=False, comment='上传图片路径')

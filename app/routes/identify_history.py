@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Resource, Namespace, fields
 from app import api, db
 from app.models.user import User
-from app.models.history import ChrHistory, CornHistory, FilamentHistory, LeafSheathHistory, YmHistory
+from app.models.history import ChrHistory, CornFilamentHistory, CornFilamentNatureHistory, CornLeafSheathHistory, CornShapeHistory
 import logging
 import os
 
@@ -14,10 +14,10 @@ history_ns = Namespace('history', description='Identify History related operatio
 
 HISTORY_MODELS = {
     'chr': ChrHistory,
-    'filament': FilamentHistory,
-    'corn': CornHistory,
-    'leaf_sheath': LeafSheathHistory,
-    'ym': YmHistory,
+    'corn-filament-nature': CornFilamentNatureHistory,
+    'corn-filament': CornFilamentHistory,
+    'corn_leaf_sheath': CornLeafSheathHistory,
+    'corn-shape': CornShapeHistory,
 }
 
 
@@ -108,27 +108,27 @@ def delete_history_files(record):
             # 刪除 ChrHistory 相關文件
             delete_file_safely(record.predicted_image_path)
             
-        elif isinstance(record, CornHistory):
-            # 刪除 CornHistory 相關文件
+        elif isinstance(record, CornFilamentHistory):
+            # 刪除 CornFilamentHistory 相關文件
             delete_file_safely(record.upload_path)
             delete_file_safely(record.processed_image_path)
             
-        elif isinstance(record, FilamentHistory):
-            # 刪除 FilamentHistory 相關文件
+        elif isinstance(record, CornFilamentNatureHistory):
+            # 刪除 CornFilamentNatureHistory 相關文件
             delete_file_safely(record.upload_path)
             delete_file_safely(record.white_background_path)
             delete_file_safely(record.red_region_path)
             delete_file_safely(record.comparison_path)
             
-        elif isinstance(record, LeafSheathHistory):
-            # 刪除 LeafSheathHistory 相關文件
+        elif isinstance(record, CornLeafSheathHistory):
+            # 刪除 CornLeafSheathHistory 相關文件
             delete_file_safely(record.upload_path)
             delete_file_safely(record.white_background_path)
             delete_file_safely(record.red_region_path)
             delete_file_safely(record.comparison_path)
             
-        elif isinstance(record, YmHistory):
-            # 刪除 YmHistory 相關文件
+        elif isinstance(record, CornShapeHistory):
+            # 刪除 CornShapeHistory 相關文件
             delete_file_safely(record.upload_path)
             delete_file_safely(record.cropped_ym_path)
             delete_file_safely(record.mask_path)
