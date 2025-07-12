@@ -2,17 +2,19 @@ from flask import Blueprint, jsonify, make_response
 from flask_restx import Resource, Namespace
 from datetime import datetime, timedelta
 from app import db, api
-from app.models.history import ChrHistory, CornFilamentHistory, CornFilamentNatureHistory, CornLeafSheathHistory, CornShapeHistory
+from app.models.history import ChrHistory, CornFilamentHistory, CornFilamentNatureHistory, CornLeafSheathHistory, \
+    CornShapeHistory, CornAllHistory
 
 statistics_bp = Blueprint('statistics', __name__)
 statistics_ns = Namespace('statistics', description='统计与可视化相关接口')
 
 HISTORY_MODELS = {
     'chr': ChrHistory,
-    'filament': CornFilamentNatureHistory,
-    'corn': CornFilamentHistory,
-    'leaf_sheath': CornLeafSheathHistory,
-    'ym': CornShapeHistory,
+    'corn_filament_nature': CornFilamentNatureHistory,
+    'corn_filament': CornFilamentHistory,
+    'corn_leaf_sheath': CornLeafSheathHistory,
+    'corn_shape': CornShapeHistory,
+    'corn_all': CornAllHistory,
 }
 
 # 1. 一周内每日识别总次数

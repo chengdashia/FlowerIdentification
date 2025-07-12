@@ -12,7 +12,7 @@ import logging
 from werkzeug.utils import secure_filename
 import uuid
 from datetime import datetime
-from app.utils.model_loader import load_ym_models
+from app.utils.model_loader import load_corn_all_models
 from skimage import color
 
 logger = logging.getLogger(__name__)
@@ -24,8 +24,8 @@ corn_all_analyzer_ns = Namespace('corn_all_analyzer', description='CORN Overall 
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 # 配置上传目录
-UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/ym/uploads')
-RESULT_FOLDER = os.path.join(app_root, 'static', 'images/ym/results')
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/corn_all/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/corn_all/results')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # 确保目录存在
@@ -33,7 +33,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载模型
-yolo_model, unet_model, zl_model, ym_unet_model = load_ym_models()
+yolo_model, unet_model, zl_model, corn_unet_model = load_corn_all_models()
 
 # 定义预处理转换
 transform = transforms.Compose([
@@ -212,7 +212,7 @@ class IntegratedYMAnalyzer:
         self.yolo_model = yolo_model
         self.unet_model = unet_model
         self.zl_model = zl_model
-        self.ym_unet_model = ym_unet_model
+        self.ym_unet_model = corn_unet_model
         self.transform = transform
 
     def yolo_detect_crop(self, image_path):

@@ -79,7 +79,7 @@ def load_leaf_sheath_model():
         raise
 
 
-def load_ym_models():
+def load_corn_all_models():
     """加载YM分析所需的模型"""
     try:
         # 配置路径
@@ -114,8 +114,8 @@ def load_ym_models():
         raise e
 
 
-def load_ym2_models():
-    """加载YM分析所需的模型"""
+def load_corn_shape_models():
+    """加载CORN整体分析所需的模型"""
     try:
         # 配置路径
         yolo_weights = r"static\models\ym2\best.pt"
