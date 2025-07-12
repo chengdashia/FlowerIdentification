@@ -46,18 +46,18 @@ def create_app():
 
     # Import and register blueprints
     from .routes.user import user_ns
-    from .routes.chr_identify import chr_identify_ns
+    from app.routes.base64.chr_identify import chr_identify_ns
     from .routes.chr_identify_file import chr_identify_file_ns
     from .routes.identify_history import history_ns
-    from .routes.corn_identify import corn_identify_ns
+    from app.routes.base64.corn_identify import corn_identify_ns
     from .routes.corn_identify_file import corn_identify_file_ns
-    from .routes.filament_identify import filament_identify_ns
+    from app.routes.base64.filament_identify import filament_identify_ns
     from .routes.filament_identify_file import filament_identify_file_ns
-    from .routes.leaf_sheath_identify import leaf_sheath_identify_ns
+    from app.routes.base64.leaf_sheath_identify import leaf_sheath_identify_ns
     from .routes.leaf_sheath_identify_file import leaf_sheath_identify_file_ns
-    from .routes.ym_analyzer import ym_analyzer_ns
-    from .routes.ym_last_analyzer import ym_last_analyzer_ns
-    from .routes.ym_all_analyzer import ym_all_analyzer_ns
+    from app.routes.base64.ym_analyzer import ym_analyzer_ns
+    from .routes.corn_shape_analyzer import corn_shape_analyzer_ns
+    from .routes.corn_all_analyzer import corn_all_analyzer_ns
     from .routes.statistics import statistics_ns
 
     api.add_namespace(user_ns, path='/auth')
@@ -71,8 +71,8 @@ def create_app():
     api.add_namespace(leaf_sheath_identify_ns, path='/leaf_sheath_identify')
     api.add_namespace(leaf_sheath_identify_file_ns, path='/leaf_sheath_identify_file')
     api.add_namespace(ym_analyzer_ns, path='/ym_analyzer')
-    api.add_namespace(ym_last_analyzer_ns, path='/ym_last_analyzer')
-    api.add_namespace(ym_all_analyzer_ns, path='/ym_all_analyzer')
+    api.add_namespace(corn_shape_analyzer_ns, path='/corn_shape_analyzer')
+    api.add_namespace(corn_all_analyzer_ns, path='/corn_all_analyzer')
     api.add_namespace(statistics_ns, path='/statistics')
 
     # 添加根路由

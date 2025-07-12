@@ -17,8 +17,8 @@ from app.utils.model_loader import load_ym_models
 logger = logging.getLogger(__name__)
 
 # 创建蓝图和命名空间
-ym_last_analyzer_bp = Blueprint('ym_last_analyzer', __name__)
-ym_last_analyzer_ns = Namespace('ym_last_analyzer', description='YM Last Shape Analysis API  直接上传图片进行分析')
+corn_shape_analyzer_bp = Blueprint('corn_shape_analyzer', __name__)
+corn_shape_analyzer_ns = Namespace('corn_shape_analyzer', description='CORN Shape Analysis API  直接上传图片进行分析')
 
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -392,9 +392,9 @@ def get_analyzer():
     return analyzer
 
 
-@ym_last_analyzer_ns.route('/analyze', methods=['POST'])
+@corn_shape_analyzer_ns.route('/analyze', methods=['POST'])
 class YMLastAnalyze(Resource):
-    @ym_last_analyzer_ns.doc(
+    @corn_shape_analyzer_ns.doc(
         description='上传图片进行YM形状分析（完整版）',
         responses={
             200: '处理成功',
@@ -552,4 +552,4 @@ class YMLastAnalyze(Resource):
 
 
 # 注册命名空间
-api.add_namespace(ym_last_analyzer_ns)
+api.add_namespace(corn_shape_analyzer_ns)

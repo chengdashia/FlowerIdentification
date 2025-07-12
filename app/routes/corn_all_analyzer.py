@@ -18,8 +18,8 @@ from skimage import color
 logger = logging.getLogger(__name__)
 
 # 创建蓝图和命名空间
-ym_all_analyzer_bp = Blueprint('ym_all_analyzer', __name__)
-ym_all_analyzer_ns = Namespace('ym_all_analyzer', description='YM All Shape Analysis API  直接上传图片进行分析')
+corn_all_analyzer_bp = Blueprint('corn_all_analyzer', __name__)
+corn_all_analyzer_ns = Namespace('corn_all_analyzer', description='CORN Overall Analysis API  直接上传图片进行分析')
 
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -608,9 +608,9 @@ def get_analyzer():
     return analyzer
 
 
-@ym_all_analyzer_ns.route('/analyze', methods=['POST'])
+@corn_all_analyzer_ns.route('/analyze', methods=['POST'])
 class YMLastAnalyze(Resource):
-    @ym_all_analyzer_ns.doc(
+    @corn_all_analyzer_ns.doc(
         description='上传图片进行YM形状分析（完整版）',
         responses={
             200: '处理成功',
@@ -790,4 +790,4 @@ class YMLastAnalyze(Resource):
 
 
 # 注册命名空间
-api.add_namespace(ym_all_analyzer_ns)
+api.add_namespace(corn_all_analyzer_ns)
