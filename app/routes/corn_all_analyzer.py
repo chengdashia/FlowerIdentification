@@ -7,7 +7,7 @@ import numpy as np
 from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
 from app import api, db
-from app.models.history import CornShapeHistory
+from app.models.history import CornAllHistory
 import logging
 from werkzeug.utils import secure_filename
 import uuid
@@ -733,8 +733,14 @@ class YMLastAnalyze(Resource):
                         try:
                             user_id = request.headers.get('token')
                             if user_id:
-                                widths = result['midline_widths']
-                                history = CornShapeHistory(
+                                # 获取单图像处理数据
+                                single_image_data = process_single_image_result or {}
+                                
+                                # 获取LAB数据
+                                lab_mean_data = single_image_data.get('lab_mean', {})
+                                lab_max_data = single_image_data.get('lab_max', {})
+                                
+                                history = CornAllHistory(
                                     user_id=user_id,
                                     upload_path=upload_url,
                                     cropped_ym_path=crop_url,
@@ -742,21 +748,33 @@ class YMLastAnalyze(Resource):
                                     overlay_path=overlay_url,
                                     analysis_path=analysis_url,
                                     shape_type=result['shape_type'],
-                                    width1=widths[0] if len(widths) > 0 else None,
-                                    width2=widths[1] if len(widths) > 1 else None,
-                                    width3=widths[2] if len(widths) > 2 else None,
-                                    width4=widths[3] if len(widths) > 3 else None,
-                                    width5=widths[4] if len(widths) > 4 else None,
+                                    width1=result['midline_widths'][0] if len(result['midline_widths']) > 0 else None,
+                                    width2=result['midline_widths'][1] if len(result['midline_widths']) > 1 else None,
+                                    width3=result['midline_widths'][2] if len(result['midline_widths']) > 2 else None,
+                                    width4=result['midline_widths'][3] if len(result['midline_widths']) > 3 else None,
+                                    width5=result['midline_widths'][4] if len(result['midline_widths']) > 4 else None,
                                     ratio_1_3=ratios.get('ratio_1_3'),
                                     ratio_3_5=ratios.get('ratio_3_5'),
                                     ratio_1_5=ratios.get('ratio_1_5'),
+                                    zl_lengths=zl_lengths,
+                                    gs_only_image_path=process_single_image_urls.get('gs_only_image') if process_single_image_urls else None,
+                                    unet_result_path=process_single_image_urls.get('unet_result') if process_single_image_urls else None,
+                                    highlight_path=process_single_image_urls.get('highlight') if process_single_image_urls else None,
+                                    center_part_path=process_single_image_urls.get('center_part') if process_single_image_urls else None,
+                                    yolo_confidence=single_image_data.get('confidence'),
+                                    lab_mean_l=lab_mean_data.get('L'),
+                                    lab_mean_a=lab_mean_data.get('A'),
+                                    lab_mean_b=lab_mean_data.get('B'),
+                                    lab_max_l=lab_max_data.get('L'),
+                                    lab_max_a=lab_max_data.get('A'),
+                                    lab_max_b=lab_max_data.get('B'),
                                     created_time=datetime.now()
                                 )
                                 db.session.add(history)
                                 db.session.commit()
                         except Exception as e:
                             db.session.rollback()
-                            logger.error(f"YM历史记录保存失败: {str(e)}")
+                            logger.error(f"CornAll历史记录保存失败: {str(e)}")
 
                     return make_response(jsonify({
                         "code": 200,

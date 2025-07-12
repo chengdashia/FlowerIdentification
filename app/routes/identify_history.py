@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Resource, Namespace, fields
 from app import api, db
 from app.models.user import User
-from app.models.history import ChrHistory, CornFilamentHistory, CornFilamentNatureHistory, CornLeafSheathHistory, CornShapeHistory
+from app.models.history import ChrHistory, CornFilamentHistory, CornFilamentNatureHistory, CornLeafSheathHistory, CornShapeHistory, CornAllHistory
 import logging
 import os
 
@@ -14,10 +14,11 @@ history_ns = Namespace('history', description='Identify History related operatio
 
 HISTORY_MODELS = {
     'chr': ChrHistory,
-    'corn-filament-nature': CornFilamentNatureHistory,
-    'corn-filament': CornFilamentHistory,
+    'corn_filament_nature': CornFilamentNatureHistory,
+    'corn_filament': CornFilamentHistory,
     'corn_leaf_sheath': CornLeafSheathHistory,
-    'corn-shape': CornShapeHistory,
+    'corn_shape': CornShapeHistory,
+    'corn_all': CornAllHistory,
 }
 
 
@@ -134,6 +135,18 @@ def delete_history_files(record):
             delete_file_safely(record.mask_path)
             delete_file_safely(record.overlay_path)
             delete_file_safely(record.analysis_path)
+            
+        elif isinstance(record, CornAllHistory):
+            # 刪除 CornAllHistory 相關文件
+            delete_file_safely(record.upload_path)
+            delete_file_safely(record.cropped_ym_path)
+            delete_file_safely(record.mask_path)
+            delete_file_safely(record.overlay_path)
+            delete_file_safely(record.analysis_path)
+            delete_file_safely(record.gs_only_image_path)
+            delete_file_safely(record.unet_result_path)
+            delete_file_safely(record.highlight_path)
+            delete_file_safely(record.center_part_path)
             
     except Exception as e:
         logger.error(f"Error deleting files for record {record.id}: {str(e)}")

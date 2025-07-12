@@ -145,3 +145,79 @@ class CornShapeHistory(db.Model):
             'ratios': {'ratio_1_3': self.ratio_1_3, 'ratio_3_5': self.ratio_3_5, 'ratio_1_5': self.ratio_1_5},
             'created_time': self.created_time.strftime('%Y-%m-%d %H:%M:%S') if self.created_time else None
         }
+
+
+class CornAllHistory(db.Model):
+    __tablename__ = 'corn_all_history'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False, comment='用户id')
+    upload_path = db.Column(db.String(255), nullable=False, comment='上传图片路径')
+    
+    # 形状分析相关字段
+    cropped_ym_path = db.Column(db.String(255), comment='裁剪后YM图片路径')
+    mask_path = db.Column(db.String(255), comment='掩码图片路径')
+    overlay_path = db.Column(db.String(255), comment='叠加图片路径')
+    analysis_path = db.Column(db.String(255), comment='形状分析图片路径')
+    shape_type = db.Column(db.String(50), comment='形状类型')
+    width1 = db.Column(db.Float, comment='中位线1宽度')
+    width2 = db.Column(db.Float, comment='中位线2宽度')
+    width3 = db.Column(db.Float, comment='中位线3宽度')
+    width4 = db.Column(db.Float, comment='中位线4宽度')
+    width5 = db.Column(db.Float, comment='中位线5宽度')
+    ratio_1_3 = db.Column(db.Float, comment='1/3比值')
+    ratio_3_5 = db.Column(db.Float, comment='3/5比值')
+    ratio_1_5 = db.Column(db.Float, comment='1/5比值')
+    
+    # ZL长度计算相关字段
+    zl_lengths = db.Column(db.JSON, comment='ZL长度数据列表')
+    
+    # 单图像处理相关字段
+    gs_only_image_path = db.Column(db.String(255), comment='仅果穗图像路径')
+    unet_result_path = db.Column(db.String(255), comment='UNet结果图像路径')
+    highlight_path = db.Column(db.String(255), comment='高亮图像路径')
+    center_part_path = db.Column(db.String(255), comment='中心部分图像路径')
+    yolo_confidence = db.Column(db.Float, comment='YOLO检测置信度')
+    
+    # LAB颜色分析
+    lab_mean_l = db.Column(db.Float, comment='LAB均值L值')
+    lab_mean_a = db.Column(db.Float, comment='LAB均值A值')
+    lab_mean_b = db.Column(db.Float, comment='LAB均值B值')
+    lab_max_l = db.Column(db.Float, comment='LAB最大值L值')
+    lab_max_a = db.Column(db.Float, comment='LAB最大值A值')
+    lab_max_b = db.Column(db.Float, comment='LAB最大值B值')
+    
+    created_time = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'upload_path': self.upload_path,
+            
+            # 形状分析
+            'cropped_ym_path': self.cropped_ym_path,
+            'mask_path': self.mask_path,
+            'overlay_path': self.overlay_path,
+            'analysis_path': self.analysis_path,
+            'shape_type': self.shape_type,
+            'midline_widths': [self.width1, self.width2, self.width3, self.width4, self.width5],
+            'ratios': {'ratio_1_3': self.ratio_1_3, 'ratio_3_5': self.ratio_3_5, 'ratio_1_5': self.ratio_1_5},
+            
+            # ZL长度
+            'zl_lengths': self.zl_lengths,
+            
+            # 单图像处理
+            'process_single_image': {
+                'gs_only_image': self.gs_only_image_path,
+                'unet_result': self.unet_result_path,
+                'highlight': self.highlight_path,
+                'center_part': self.center_part_path,
+                'confidence': self.yolo_confidence
+            },
+            
+            # LAB颜色分析
+            'lab_mean': {'L': self.lab_mean_l, 'A': self.lab_mean_a, 'B': self.lab_mean_b},
+            'lab_max': {'L': self.lab_max_l, 'A': self.lab_max_a, 'B': self.lab_max_b},
+            
+            'created_time': self.created_time.strftime('%Y-%m-%d %H:%M:%S') if self.created_time else None
+        }
