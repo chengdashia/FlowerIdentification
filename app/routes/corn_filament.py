@@ -13,8 +13,8 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 # 创建蓝图和命名空间
-corn_identify_file_bp = Blueprint('corn_identify_file', __name__)
-corn_identify_file_ns = Namespace('corn_identify_file', description='corn identify api')
+corn_filament_bp = Blueprint('corn_filament', __name__)
+corn_filament_ns = Namespace('corn_filament', description='corn filament identify api')
 
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -123,9 +123,9 @@ def pipeline_process(image_path, result_dir):
 
 
 # --------------------- Flask-RESTX 资源 --------------------- #
-@corn_identify_file_ns.route('/analyze', methods=['POST'])
+@corn_filament_ns.route('/analyze', methods=['POST'])
 class ColorAnalyze(Resource):
-    @corn_identify_file_ns.doc(
+    @corn_filament_ns.doc(
         description='上传图片文件，去灰/去绿并计算 LAB',
         responses={
             200: '图像处理成功',
@@ -242,4 +242,4 @@ class ColorAnalyze(Resource):
 
 
 # 注册命名空间
-api.add_namespace(corn_identify_file_ns)
+api.add_namespace(corn_filament_ns)

@@ -5,8 +5,8 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_restx import Namespace, Resource
 from skimage.color import rgb2lab
 from app import api, db
-from app.models.history import LeafSheathHistory
-from app.utils.model_loader import load_leaf_sheath_model
+from app.models.history import FilamentHistory
+from app.utils.model_loader import load_filament_model
 import logging
 from werkzeug.utils import secure_filename
 import uuid
@@ -15,14 +15,14 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 # 创建蓝图和命名空间
-leaf_sheath_identify_file_bp = Blueprint('leaf_sheath_identify_file', __name__)
-leaf_sheath_identify_file_ns = Namespace('leaf_sheath_identify_file', description='filament identify api')
+corn_filament_nature_bp = Blueprint('corn_filament_nature', __name__)
+corn_filament_nature_ns = Namespace('corn_filament_nature', description='filament identify api')
 
 # 获取应用根目录的绝对路径
 app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 # 配置上传目录
-UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/leaf/uploads')
-RESULT_FOLDER = os.path.join(app_root, 'static', 'images/leaf/results')
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/filament/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/filament/results')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
 # 确保目录存在
@@ -30,7 +30,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载YOLO模型
-model = load_leaf_sheath_model()
+unet_model = load_filament_model()
 
 
 def allowed_file(filename):
@@ -77,7 +77,7 @@ def process_image(pil_image, result_dir, base_name):
     """处理图像并返回结果"""
     try:
         # 1. 模型预测和初始处理
-        result = model.detect_image(pil_image)
+        result = unet_model.detect_image(pil_image)
         image_rgb = pil_image.convert('RGB')
         image_np = np.array(image_rgb)
         pred_np = np.array(result)
@@ -97,7 +97,7 @@ def process_image(pil_image, result_dir, base_name):
 
         # 4. 提取红色区域
         a_channel = image_lab[:, :, 1]
-        red_mask = a_channel > 5
+        red_mask = a_channel > 10
         red_region = np.zeros_like(white_background)
         red_region[red_mask] = white_background[red_mask]
 
@@ -140,9 +140,9 @@ def process_image(pil_image, result_dir, base_name):
         return None
 
 
-@leaf_sheath_identify_file_ns.route('/analyze', methods=['POST'])
+@corn_filament_nature_ns.route('/analyze', methods=['POST'])
 class ImagePredict(Resource):
-    @leaf_sheath_identify_file_ns.doc(
+    @corn_filament_nature_ns.doc(
         description='上传图片进行预测和LAB分析',
         responses={
             200: '处理成功',
@@ -212,7 +212,7 @@ class ImagePredict(Resource):
                     try:
                         user_id = request.headers.get('token')
                         if user_id:
-                            history = LeafSheathHistory(
+                            history = FilamentHistory(
                                 user_id=user_id,
                                 upload_path=upload_url,
                                 white_background_path=white_bg_url,
@@ -231,6 +231,7 @@ class ImagePredict(Resource):
                     except Exception as e:
                         db.session.rollback()
                         logger.error(f"历史记录保存失败: {str(e)}")
+
 
                     # 返回结果
                     return make_response(jsonify({
@@ -281,4 +282,4 @@ class ImagePredict(Resource):
 
 
 # 注册命名空间
-api.add_namespace(leaf_sheath_identify_file_ns)
+api.add_namespace(corn_filament_nature_ns)
