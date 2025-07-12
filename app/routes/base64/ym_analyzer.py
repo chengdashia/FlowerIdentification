@@ -18,7 +18,7 @@ ym_analyzer_bp = Blueprint('ym_analyzer', __name__)
 ym_analyzer_ns = Namespace('ym_analyzer', description='YM shape analysis API 使用base64编码的图片进行分析')
 
 # 加载模型
-yolo_model, unet_model = load_ym_models()
+yolo_model, unet_model, zl_model, ym_model = load_ym_models()
 
 
 def decode_base64_to_pil(base64_str):
