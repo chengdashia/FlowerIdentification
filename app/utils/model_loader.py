@@ -1,10 +1,10 @@
 import os
 from ultralytics import YOLO
-from app.models.ym.ultralytics import YOLO as YMYOLO
-from app.models.resnet import *
-from app.models.resnet1 import *
-from app.models.unet import Unet
-from app.models.ym.YMUNet import YMUNet
+from app.models.corn.ultralytics import YOLO as YMYOLO
+from app.models.chr.resnet import *
+from app.models.chr.resnet1 import *
+from app.models.chr.unet import Unet
+from app.models.corn.corn_shape.YMUNet import YMUNet
 import logging
 
 logger = logging.getLogger(__name__)
