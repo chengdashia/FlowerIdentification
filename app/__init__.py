@@ -61,6 +61,7 @@ def create_app():
     from .routes.statistics import statistics_ns
     from .routes.specific.appearance_grade import corn_grade_ns
     from .routes.specific.length_width import corn_lw_ns
+    from .routes.specific.rachis_color import corn_rachis_color_ns
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
@@ -79,6 +80,7 @@ def create_app():
     # 玉米詳細分析
     api.add_namespace(corn_grade_ns, path='/corn_grade')
     api.add_namespace(corn_lw_ns, path='/corn_lw')
+    api.add_namespace(corn_rachis_color_ns, path='/corn_rachis_color')
 
     # 添加根路由
     @app.route('/')
