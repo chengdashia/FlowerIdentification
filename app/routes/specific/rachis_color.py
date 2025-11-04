@@ -11,6 +11,7 @@ import logging
 from werkzeug.utils import secure_filename
 import uuid
 from datetime import datetime
+from app.utils.path_utils import convert_to_url_path
 
 # 导入您的UNet模型
 from app.models.corn.specific.rachis.unet import Unet
@@ -22,15 +23,17 @@ corn_rachis_color_bp = Blueprint('corn_rachis_color', __name__)
 corn_rachis_color_ns = Namespace('corn_rachis_color', description='玉米穗轴颜色分析API')
 
 # 获取应用根目录的绝对路径
-app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 # 配置上传目录
-UPLOAD_FOLDER = 'static/images/corn_rachis_color/uploads'
-RESULT_FOLDER = 'static/images/corn_rachis_color/results'
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/corn_ear_row/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/corn_ear_row/results')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp'}
 
 # 模型路径配置
-UNET_WEIGHT_PATH = r'static/models/specific/rachis/best_epoch_weights.pth'
+# UNET_WEIGHT_PATH = r'static/models/specific/rachis/best_epoch_weights.pth'
+
+UNET_WEIGHT_PATH = os.path.join(app_root, 'static/models/specific/rachis/best_epoch_weights.pth')
 
 # 模型参数
 NUM_CLASSES = 2  # ["_background_", "0"]
@@ -276,11 +279,10 @@ class CornAxisColorAnalyze(Resource):
                     }), 400)
 
                 # 转换为URL路径
-                static_dir = os.path.join(app_root, 'static')
-                # upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
+                # upload_url = convert_to_url_path(upload_path, app_root)
                 mask_url = None
                 if result.get('mask_path') and os.path.exists(result['mask_path']):
-                    mask_url = f"/static/{os.path.relpath(result['mask_path'], static_dir).replace(os.sep, '/')}"
+                    mask_url = convert_to_url_path(result['mask_path'], app_root)
                 #
                 # # 保存历史记录
                 # try:
@@ -313,49 +315,6 @@ class CornAxisColorAnalyze(Resource):
                         # "original_image": upload_url,
                         "mask_image": mask_url
                     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }), 200)
 
             except ValueError as ve:

@@ -16,7 +16,7 @@ from werkzeug.utils import secure_filename
 import uuid
 from datetime import datetime
 from app.models.corn.specific.earRows.models import build_model
-
+from app.utils.path_utils import convert_to_url_path
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +25,10 @@ corn_ear_row_bp = Blueprint('corn_ear_row', __name__)
 corn_ear_row_ns = Namespace('corn_ear_row', description='玉米穗行数量检测API')
 
 # 获取应用根目录的绝对路径
-app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-
+app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 # 配置上传目录
-UPLOAD_FOLDER = 'static/images/corn_rachis_color/uploads'
-RESULT_FOLDER = 'static/images/corn_rachis_color/results'
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/corn_ear_row/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/corn_ear_row/results')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp'}
 
 # 模型路径配置
@@ -681,12 +680,11 @@ class CornEarRowDetect(Resource):
                     }), 400)
 
                 # 转换为URL路径
-                static_dir = os.path.join(app_root, 'static')
-                upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
+                upload_url = convert_to_url_path(upload_path, app_root)
 
                 result_url = None
                 if result.get('result_path') and os.path.exists(result['result_path']):
-                    result_url = f"/static/{os.path.relpath(result['result_path'], static_dir).replace(os.sep, '/')}"
+                    result_url = convert_to_url_path(result['result_path'], app_root)
 
                 # # 保存历史记录
                 # try:

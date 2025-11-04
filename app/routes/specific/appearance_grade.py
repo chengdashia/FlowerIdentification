@@ -23,16 +23,19 @@ logger = logging.getLogger(__name__)
 corn_grade_bp = Blueprint('corn_grade', __name__)
 corn_grade_ns = Namespace('corn_grade', description='玉米高度等级分析API')
 # 获取应用根目录的绝对路径
+app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 # 配置上传目录
-UPLOAD_FOLDER = 'static/images/corn_grade/uploads'
-CROP_FOLDER = 'static/images/corn_grade/crops'
-MASK_FOLDER = 'static/images/corn_grade/masks'
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/corn_grade/uploads')
+CROP_FOLDER = os.path.join(app_root, 'static', 'images/corn_grade/crops')
+MASK_FOLDER = os.path.join(app_root, 'static', 'images/corn_grade/masks')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
 
-
 # 模型路径配置 - 根据实际情况调整
-YOLO_MODEL_PATH = r'static/models/specific/grade/best.pt'
-UNET_WEIGHTS_PATH = r'static/models/specific/grade/best_improved_unet_model.pth'
+# YOLO_MODEL_PATH = r'static/models/specific/grade/best.pt'
+# UNET_WEIGHTS_PATH = r'static/models/specific/grade/best_improved_unet_model.pth'
+
+YOLO_MODEL_PATH = os.path.join(app_root, 'static/models/specific/grade/best.pt')
+UNET_WEIGHTS_PATH = os.path.join(app_root, 'static/models/specific/grade/best_improved_unet_model.pth')
 
 # 模型参数
 CONF_THRES = 0.25
@@ -444,10 +447,13 @@ class CornHeightAnalyze(Resource):
                 # 转换为URL路径
                 # static_dir = os.path.join(app_root, 'static')
                 # upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
-                # crop_url = f"/static/{os.path.relpath(crop_path, static_dir).replace(os.sep, '/')}" if result[
-                #     'crop_path'] else None
-                # mask_url = f"/static/{os.path.relpath(mask_path, static_dir).replace(os.sep, '/')}" if result[
-                #     'mask_path'] else None
+                #
+                # crop_url = None
+                # mask_url = None
+                # if result.get('crop_path'):
+                #     crop_url = f"/static/{os.path.relpath(result['crop_path'], static_dir).replace(os.sep, '/')}"
+                # if result.get('mask_path'):
+                #     mask_url = f"/static/{os.path.relpath(result['mask_path'], static_dir).replace(os.sep, '/')}"
 
                 # # 保存历史记录
                 # try:

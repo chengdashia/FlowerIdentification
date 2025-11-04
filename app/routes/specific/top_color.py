@@ -16,6 +16,7 @@ from datetime import datetime
 # 导入您的模型
 from app.models.corn.ultralytics import YOLO
 from app.models.corn.specific.rachis.unet import Unet
+from app.utils.path_utils import convert_to_url_path
 
 logger = logging.getLogger(__name__)
 
@@ -27,17 +28,20 @@ corn_top_color_bp = Blueprint('corn_top_color', __name__)
 corn_top_color_ns = Namespace('corn_top_color', description='玉米果穗顶端颜色分析API')
 
 # 获取应用根目录的绝对路径
-app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 # 配置上传目录
-UPLOAD_FOLDER = 'static/images/corn_top_color/uploads'
-CROP_FOLDER = 'static/images/corn_top_color/crops'
-RESULT_FOLDER = 'static/images/corn_top_color/results'
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/corn_top_color/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/corn_top_color/results')
+CROP_FOLDER = os.path.join(app_root, 'static', 'static/images/corn_top_color/crops')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp'}
 
 # 模型路径配置
-YOLO_WEIGHT_PATH = r'static/models/specific/topColor/best.pt'
-UNET_WEIGHT_PATH = r'static/models/specific/topColor/best_epoch_weights.pth'
+# YOLO_WEIGHT_PATH = r'static/models/specific/topColor/best.pt'
+# UNET_WEIGHT_PATH = r'static/models/specific/topColor/best_epoch_weights.pth'
+
+YOLO_WEIGHT_PATH = os.path.join(app_root, 'static/models/specific/topColor/best.pt')
+UNET_WEIGHT_PATH = os.path.join(app_root, 'static/models/specific/topColor/best_epoch_weights.pth')
 
 # UNet模型参数
 NUM_CLASSES = 2
@@ -381,16 +385,15 @@ class CornTopColorAnalyze(Resource):
                     }), 400)
 
                 # 转换为URL路径
-                static_dir = os.path.join(app_root, 'static')
-                upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
+                upload_url = convert_to_url_path(upload_path, app_root)
 
                 crop_url = None
                 if result.get('crop_path') and os.path.exists(result['crop_path']):
-                    crop_url = f"/static/{os.path.relpath(result['crop_path'], static_dir).replace(os.sep, '/')}"
+                    crop_url = convert_to_url_path(result['crop_path'], app_root)
 
                 result_url = None
                 if result.get('result_path') and os.path.exists(result['result_path']):
-                    result_url = f"/static/{os.path.relpath(result['result_path'], static_dir).replace(os.sep, '/')}"
+                    result_url = convert_to_url_path(result['result_path'], app_root)
 
                 # # 保存历史记录
                 # try:

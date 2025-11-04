@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 
 from app.models.corn.ultralytics import YOLO
+from app.utils.path_utils import convert_to_url_path
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +19,17 @@ corn_lw_bp = Blueprint('corn_lw', __name__)
 corn_lw_ns = Namespace('corn_lw', description='玉米宽度长度测量API')
 
 # 获取应用根目录的绝对路径
-app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+app_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 # 配置上传目录
-UPLOAD_FOLDER = 'static/images/corn_lw/uploads'
-RESULT_FOLDER = 'static/images/corn_lw/results'
+UPLOAD_FOLDER = os.path.join(app_root, 'static', 'images/corn_ear_row/uploads')
+RESULT_FOLDER = os.path.join(app_root, 'static', 'images/corn_ear_row/results')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp'}
 
 # 模型路径配置
-YOLO_MODEL_PATH = r'static/models/specific/grade/best.pt'
+# YOLO_MODEL_PATH = r'static/models/specific/grade/best.pt'
+
+YOLO_MODEL_PATH = os.path.join(app_root, 'static/models/specific/grade/best.pt')
 
 # 默认测量参数
 DEFAULT_CONF_THRES = 0.25
@@ -489,11 +492,10 @@ class CornWidthMeasure(Resource):
                     }), 400)
 
                 # 转换为URL路径
-                # static_dir = os.path.join(app_root, 'static')
-                # upload_url = f"/static/{os.path.relpath(upload_path, static_dir).replace(os.sep, '/')}"
+                # upload_url = convert_to_url_path(upload_path, app_root)
                 # vis_url = None
                 # if result.get('vis_path') and os.path.exists(result['vis_path']):
-                #     vis_url = f"/static/{os.path.relpath(result['vis_path'], static_dir).replace(os.sep, '/')}"
+                #     vis_url = convert_to_url_path(result['vis_path'], app_root)
 
                 # # 保存历史记录
                 # try:
