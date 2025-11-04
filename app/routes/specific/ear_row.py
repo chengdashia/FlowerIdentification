@@ -710,7 +710,7 @@ class CornEarRowDetect(Resource):
                     "message": "检测成功",
                     "data": {
                         "number_of_ears": result['data']['number_of_ears'],
-                        "original_image": upload_url,
+                        # "original_image": upload_url,
                         "result_image": result_url
                     }
                 }), 200)
