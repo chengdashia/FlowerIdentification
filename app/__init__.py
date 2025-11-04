@@ -59,6 +59,7 @@ def create_app():
     from .routes.corn_shape_analyzer import corn_shape_analyzer_ns
     from .routes.corn_all_analyzer import corn_all_analyzer_ns
     from .routes.statistics import statistics_ns
+    from .routes.specific.appearance_grade import corn_grade_ns
 
     api.add_namespace(user_ns, path='/auth')
     api.add_namespace(chr_identify_ns, path='/chr_identify')
@@ -74,6 +75,8 @@ def create_app():
     api.add_namespace(corn_shape_analyzer_ns, path='/corn_last_analyzer')
     api.add_namespace(corn_all_analyzer_ns, path='/corn_all_analyzer')
     api.add_namespace(statistics_ns, path='/statistics')
+    # 玉米詳細分析
+    api.add_namespace(corn_grade_ns, path='/corn_grade')
 
     # 添加根路由
     @app.route('/')
